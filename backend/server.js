@@ -26,12 +26,33 @@ app.use(express.json());
 
 let ytPromise = null;
 
+function parseCookieEnv(raw) {
+  if (!raw || typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const list = Array.isArray(parsed) ? parsed : parsed?.cookies;
+      if (Array.isArray(list)) {
+        return list
+          .filter((c) => c?.name && c?.value !== undefined)
+          .map((c) => `${c.name}=${c.value}`)
+          .join('; ');
+      }
+    } catch {
+      // Fall back to raw string
+    }
+  }
+  return trimmed;
+}
+
 async function getInnertube() {
   if (!ytPromise) {
     ytPromise = Innertube.create({
       cache: new UniversalCache(false),
       generate_session_locally: true,
-      cookie: process.env.YT_COOKIE || undefined,
+      cookie: parseCookieEnv(process.env.YT_COOKIE),
     }).catch((err) => {
       ytPromise = null;
       throw err;
