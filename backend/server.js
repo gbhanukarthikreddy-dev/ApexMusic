@@ -31,6 +31,7 @@ async function getInnertube() {
     ytPromise = Innertube.create({
       cache: new UniversalCache(false),
       generate_session_locally: true,
+      cookie: process.env.YT_COOKIE || undefined,
     }).catch((err) => {
       ytPromise = null;
       throw err;
@@ -193,6 +194,10 @@ function normalizePlaylist(item) {
     artwork: pickArtwork(item.thumbnails || item.thumbnail),
   };
 }
+
+app.get('/', (_req, res) => {
+  res.json({ ok: true, service: 'apex-music-backend' });
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'apex-music-backend' });
