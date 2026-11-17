@@ -1,0 +1,83 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radii, spacing, typography } from '../theme';
+
+interface ErrorStateProps {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+}
+
+export function ErrorState({
+  title = 'Something went wrong',
+  message,
+  onRetry,
+}: ErrorStateProps) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.iconWrap}>
+        <Ionicons name="cloud-offline-outline" size={32} color={colors.error} />
+      </View>
+      <Text style={[typography.h3, styles.title]}>{title}</Text>
+      <Text style={[typography.body, styles.message]}>{message}</Text>
+      {onRetry ? (
+        <Pressable
+          onPress={onRetry}
+          style={({ pressed }) => [styles.retryBtn, pressed && styles.retryPressed]}
+        >
+          <Ionicons name="refresh" size={16} color={colors.textInverse} />
+          <Text style={styles.retryText}>Try Again</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    margin: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  iconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    backgroundColor: colors.errorMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: spacing.xxs,
+  },
+  message: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+  },
+  retryPressed: {
+    opacity: 0.85,
+  },
+  retryText: {
+    color: colors.textInverse,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+});
