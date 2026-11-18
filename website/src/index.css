@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #0a0a0a;
+    color: #f2f2f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .label {
+    @apply font-mono text-[11px] uppercase tracking-label text-mute;
+  }
+
+  .pill-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-bone px-6 py-3 font-mono text-xs uppercase tracking-label text-ink transition duration-200 hover:bg-apex hover:text-bone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-apex motion-reduce:transition-none;
+  }
+
+  .pill-btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-transparent px-6 py-3 font-mono text-xs uppercase tracking-label text-bone transition duration-200 hover:border-apex hover:text-apex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-apex motion-reduce:transition-none;
+  }
+
+  .frame {
+    @apply rounded-frame border border-line;
+  }
+}
