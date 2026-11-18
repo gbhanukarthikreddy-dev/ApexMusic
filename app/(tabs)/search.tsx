@@ -48,13 +48,13 @@ const MOOD_CARDS: Array<{
   iconColor: string;
   icon: keyof typeof Ionicons.glyphMap;
 }> = [
-  { label: 'Lo-Fi Chill', query: 'lofi beats chill', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF', icon: 'headset' },
-  { label: 'Synthwave', query: 'synthwave retrowave', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F', icon: 'planet' },
-  { label: 'Hip-Hop', query: 'hip hop hits', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A', icon: 'mic' },
-  { label: 'Pop Hits', query: 'top pop hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF', icon: 'sparkles' },
-  { label: 'Workout', query: 'workout gym music', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158', icon: 'flash' },
-  { label: 'Acoustic', query: 'acoustic indie chill', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A', icon: 'musical-notes' },
-];
+    { label: 'Lo-Fi Chill', query: 'lofi beats chill', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF', icon: 'headset' },
+    { label: 'Synthwave', query: 'synthwave retrowave', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F', icon: 'planet' },
+    { label: 'Hip-Hop', query: 'hip hop hits', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A', icon: 'mic' },
+    { label: 'Pop Hits', query: 'top pop hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF', icon: 'sparkles' },
+    { label: 'Workout', query: 'workout gym music', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158', icon: 'flash' },
+    { label: 'Acoustic', query: 'acoustic indie chill', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A', icon: 'musical-notes' },
+  ];
 
 const LANGUAGE_CARDS: {
   label: string;
@@ -63,16 +63,16 @@ const LANGUAGE_CARDS: {
   tint: string;
   iconColor: string;
 }[] = [
-  { label: 'English', native: 'Global Hits', query: 'english top hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF' },
-  { label: 'Hindi', native: 'हिन्दी', query: 'hindi bollywood top hits', tint: 'rgba(250, 45, 72, 0.16)', iconColor: '#FA2D48' },
-  { label: 'Telugu', native: 'తెలుగు', query: 'telugu top hits songs', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A' },
-  { label: 'Tamil', native: 'தமிழ்', query: 'tamil top hits songs', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158' },
-  { label: 'Punjabi', native: 'ਪੰਜਾਬੀ', query: 'punjabi top hits', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F' },
-  { label: 'Malayalam', native: 'മലയാളം', query: 'malayalam top hits', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF' },
-  { label: 'Kannada', native: 'ಕನ್ನಡ', query: 'kannada top hits', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A' },
-  { label: 'K-Pop', native: '한국어', query: 'kpop top hits', tint: 'rgba(191, 90, 242, 0.16)', iconColor: '#BF5AF2' },
-  { label: 'Spanish', native: 'Español', query: 'latin spanish top hits', tint: 'rgba(255, 105, 97, 0.16)', iconColor: '#FF6961' },
-];
+    { label: 'English', native: 'Global Hits', query: 'english top hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF' },
+    { label: 'Hindi', native: 'हिन्दी', query: 'hindi bollywood top hits', tint: 'rgba(250, 45, 72, 0.16)', iconColor: '#FA2D48' },
+    { label: 'Telugu', native: 'తెలుగు', query: 'telugu top hits songs', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A' },
+    { label: 'Tamil', native: 'தமிழ்', query: 'tamil top hits songs', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158' },
+    { label: 'Punjabi', native: 'ਪੰਜਾਬੀ', query: 'punjabi top hits', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F' },
+    { label: 'Malayalam', native: 'മലയാളം', query: 'malayalam top hits', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF' },
+    { label: 'Kannada', native: 'ಕನ್ನಡ', query: 'kannada top hits', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A' },
+    { label: 'K-Pop', native: '한국어', query: 'kpop top hits', tint: 'rgba(191, 90, 242, 0.16)', iconColor: '#BF5AF2' },
+    { label: 'Spanish', native: 'Español', query: 'latin spanish top hits', tint: 'rgba(255, 105, 97, 0.16)', iconColor: '#FF6961' },
+  ];
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -431,108 +431,108 @@ export default function SearchScreen() {
         style={[styles.safeArea, { backgroundColor: themeColors.background }]}
         edges={['top']}
       >
-      <View style={styles.header}>
-        <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Search</Text>
-      </View>
+        <View style={styles.header}>
+          <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Search</Text>
+        </View>
 
-      <View
-        style={[
-          styles.searchBarWrap,
-          {
-            backgroundColor: themeColors.surface,
-            borderColor: themeColors.border,
-          },
-        ]}
-      >
-        <Ionicons name="search" size={18} color={themeColors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={(text) => {
-            setQuery(text);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          onSubmitEditing={() => {
-            setShowSuggestions(false);
-            void runSearch(query);
-          }}
-          placeholder="Songs, artists, albums, playlists..."
-          placeholderTextColor={themeColors.textMuted}
-          style={[styles.searchInput, { color: themeColors.textPrimary }]}
-          returnKeyType="search"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {query.length > 0 ? (
-          <Pressable
-            onPress={() => {
-              setQuery('');
-              setSuggestions([]);
-              setResults(null);
-            }}
-            hitSlop={10}
-          >
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
-
-      {/* Suggestions strip while typing */}
-      {showSuggestions && query.trim().length > 0 && suggestions.length > 0 ? (
         <View
           style={[
-            styles.suggestionsBox,
-            { backgroundColor: themeColors.surface, borderColor: themeColors.border },
+            styles.searchBarWrap,
+            {
+              backgroundColor: themeColors.surface,
+              borderColor: themeColors.border,
+            },
           ]}
         >
-          {suggestions.slice(0, 5).map((item) => (
+          <Ionicons name="search" size={18} color={themeColors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={(text) => {
+              setQuery(text);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onSubmitEditing={() => {
+              setShowSuggestions(false);
+              void runSearch(query);
+            }}
+            placeholder="Songs, artists, albums, playlists..."
+            placeholderTextColor={themeColors.textMuted}
+            style={[styles.searchInput, { color: themeColors.textPrimary }]}
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {query.length > 0 ? (
             <Pressable
-              key={item}
-              onPress={() => handleSelectSuggestion(item)}
-              style={[styles.suggestionRow, { borderBottomColor: themeColors.borderSubtle }]}
+              onPress={() => {
+                setQuery('');
+                setSuggestions([]);
+                setResults(null);
+              }}
+              hitSlop={10}
             >
-              <Ionicons name="search-outline" size={15} color={themeColors.textSecondary} />
-              <Text
-                numberOfLines={1}
-                style={[typography.body, styles.suggestionText, { color: themeColors.textPrimary }]}
-              >
-                {item}
-              </Text>
-              <Ionicons name="arrow-up-outline" size={15} color={themeColors.textMuted} />
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
-          ))}
+          ) : null}
         </View>
-      ) : null}
 
-      {/* Filter Tabs */}
-      {query.trim().length > 0 ? (
-        <View style={styles.tabsRow}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
+        {/* Suggestions strip while typing */}
+        {showSuggestions && query.trim().length > 0 && suggestions.length > 0 ? (
+          <View
+            style={[
+              styles.suggestionsBox,
+              { backgroundColor: themeColors.surface, borderColor: themeColors.border },
+            ]}
+          >
+            {suggestions.slice(0, 5).map((item) => (
               <Pressable
-                key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
-                style={[styles.tabPill, active && styles.tabPillActive]}
+                key={item}
+                onPress={() => handleSelectSuggestion(item)}
+                style={[styles.suggestionRow, { borderBottomColor: themeColors.borderSubtle }]}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                  {tab.label}
+                <Ionicons name="search-outline" size={15} color={themeColors.textSecondary} />
+                <Text
+                  numberOfLines={1}
+                  style={[typography.body, styles.suggestionText, { color: themeColors.textPrimary }]}
+                >
+                  {item}
                 </Text>
+                <Ionicons name="arrow-up-outline" size={15} color={themeColors.textMuted} />
               </Pressable>
-            );
-          })}
+            ))}
+          </View>
+        ) : null}
+
+        {/* Filter Tabs */}
+        {query.trim().length > 0 ? (
+          <View style={styles.tabsRow}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  style={[styles.tabPill, active && styles.tabPillActive]}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+
+        <View style={styles.body}>
+          {query.trim().length === 0 ? renderEmptyQuery() : renderResults()}
         </View>
-      ) : null}
 
-      <View style={styles.body}>
-        {query.trim().length === 0 ? renderEmptyQuery() : renderResults()}
-      </View>
-
-      <TrackActionSheet
-        track={selectedTrack}
-        visible={Boolean(selectedTrack)}
-        onClose={() => setSelectedTrack(null)}
-      />
+        <TrackActionSheet
+          track={selectedTrack}
+          visible={Boolean(selectedTrack)}
+          onClose={() => setSelectedTrack(null)}
+        />
       </SafeAreaView>
     </FadeOnFocus>
   );
