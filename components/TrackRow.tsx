@@ -11,6 +11,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { useLibraryStore } from '../store/libraryStore';
 import { usePlayerStore } from '../store/playerStore';
 import { useUIStore } from '../store/uiStore';
@@ -42,6 +43,7 @@ export const TrackRow = React.memo(function TrackRow({
   showIndex = false,
   showLike = true,
 }: TrackRowProps) {
+  const { colors: themeColors } = useAppTheme();
   const currentTrackId = usePlayerStore((s) => s.currentTrack?.id);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isLiked = useLibraryStore((s) => s.likedSongs.some((t) => t.id === track.id));
@@ -130,7 +132,7 @@ export const TrackRow = React.memo(function TrackRow({
       <View style={styles.actionsBackdrop}>
         <Animated.View style={[styles.queueAction, queueActionStyle]}>
           <Text style={styles.queueActionText}>Queue</Text>
-          <Ionicons name="add-circle" size={20} color={colors.textInverse} />
+          <Ionicons name="add-circle" size={20} color={colors.textPrimary} />
         </Animated.View>
       </View>
 
@@ -143,8 +145,8 @@ export const TrackRow = React.memo(function TrackRow({
             }}
             style={({ pressed }) => [
               styles.container,
-              isActive && styles.activeContainer,
-              pressed && styles.pressed,
+              isActive && [styles.activeContainer, { backgroundColor: themeColors.surfaceHighlight }],
+              pressed && [styles.pressed, { backgroundColor: themeColors.surface }],
             ]}
           >
             {showIndex && typeof index === 'number' ? (
@@ -152,7 +154,9 @@ export const TrackRow = React.memo(function TrackRow({
                 {isActive ? (
                   <EqualizerBars active={isPlaying} size="sm" />
                 ) : (
-                  <Text style={styles.indexText}>{index + 1}</Text>
+                  <Text style={[styles.indexText, { color: themeColors.textMuted }]}>
+                    {index + 1}
+                  </Text>
                 )}
               </View>
             ) : null}
@@ -167,7 +171,7 @@ export const TrackRow = React.memo(function TrackRow({
               />
               {!showIndex && isActive ? (
                 <View style={styles.activeOverlay}>
-                  <EqualizerBars active={isPlaying} color={colors.textPrimary} size="sm" />
+                  <EqualizerBars active={isPlaying} color="#FFFFFF" size="sm" />
                 </View>
               ) : null}
             </View>
@@ -175,12 +179,19 @@ export const TrackRow = React.memo(function TrackRow({
             <View style={styles.meta}>
               <Text
                 numberOfLines={1}
-                style={[typography.bodyMedium, isActive && styles.activeTitle]}
+                style={[
+                  typography.bodyMedium,
+                  { color: themeColors.textPrimary },
+                  isActive && styles.activeTitle,
+                ]}
               >
                 {track.title}
               </Text>
               <View style={styles.subRow}>
-                <Text numberOfLines={1} style={[typography.caption, styles.artist]}>
+                <Text
+                  numberOfLines={1}
+                  style={[typography.caption, styles.artist, { color: themeColors.textSecondary }]}
+                >
                   {track.artist}
                   {track.duration > 0 ? ` • ${formatDuration(track.duration)}` : ''}
                 </Text>
@@ -203,7 +214,7 @@ export const TrackRow = React.memo(function TrackRow({
                   hitSlop={10}
                   style={styles.iconBtn}
                 >
-                  <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
+                  <Ionicons name="ellipsis-vertical" size={18} color={themeColors.textSecondary} />
                 </Pressable>
               ) : null}
             </View>
@@ -226,7 +237,9 @@ const styles = StyleSheet.create({
     left: spacing.sm,
     right: spacing.sm,
     borderRadius: radii.md,
-    backgroundColor: colors.accent,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: colors.glassHighlight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -238,9 +251,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   queueActionText: {
-    color: colors.textInverse,
+    color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   container: {
     flexDirection: 'row',
@@ -254,8 +267,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   activeContainer: {
-    backgroundColor: '#191C12',
-    borderColor: 'rgba(198, 230, 59, 0.28)',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.glassBorder,
     marginHorizontal: spacing.sm,
     paddingHorizontal: spacing.sm + 2,
   },

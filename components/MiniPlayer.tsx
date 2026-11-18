@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -13,6 +13,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { usePlayerStore } from '../store/playerStore';
 import { colors, layout, radii, spacing, typography } from '../theme';
 import { getHighResArtwork } from '../utils/format';
@@ -39,6 +40,7 @@ const MiniProgressBar = React.memo(function MiniProgressBar() {
 
 export function MiniPlayer({ bottomOffset = 0 }: MiniPlayerProps) {
   const router = useRouter();
+  const { isDark, colors: themeColors, blurTint } = useAppTheme();
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isLoadingStream = usePlayerStore((s) => s.isLoadingStream);
@@ -125,20 +127,38 @@ export function MiniPlayer({ bottomOffset = 0 }: MiniPlayerProps) {
           onPressOut={() => {
             scale.value = withSpring(1, { damping: 16, stiffness: 260 });
           }}
-          style={[styles.container, animStyle]}
+          style={[
+            styles.container,
+            {
+              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.65)' : 'rgba(255, 255, 255, 0.78)',
+              borderColor: themeColors.glassBorder,
+            },
+            animStyle,
+          ]}
         >
           <Image
             source={{ uri: artUri }}
             style={styles.ambientBg}
             contentFit="cover"
-            blurRadius={45}
+            blurRadius={55}
             cachePolicy="memory-disk"
           />
-          <LinearGradient
-            colors={['rgba(24, 24, 32, 0.88)', 'rgba(18, 18, 24, 0.96)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.ambientOverlay}
+          <BlurView
+            intensity={65}
+            tint={blurTint}
+            blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[
+              styles.ambientOverlay,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(16, 16, 20, 0.52)'
+                  : 'rgba(255, 255, 255, 0.58)',
+              },
+            ]}
+            pointerEvents="none"
           />
 
           <View style={styles.content}>
@@ -151,12 +171,22 @@ export function MiniPlayer({ bottomOffset = 0 }: MiniPlayerProps) {
 
             <View style={styles.meta}>
               <View style={styles.titleRow}>
-                <Text numberOfLines={1} style={[typography.bodyMedium, styles.titleText]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    typography.bodyMedium,
+                    styles.titleText,
+                    { color: themeColors.textPrimary },
+                  ]}
+                >
                   {currentTrack.title}
                 </Text>
-                <EqualizerBars active={isPlaying} color={colors.accent} size="sm" />
+                <EqualizerBars active={isPlaying} color={themeColors.accent} size="sm" />
               </View>
-              <Text numberOfLines={1} style={typography.caption}>
+              <Text
+                numberOfLines={1}
+                style={[typography.caption, { color: themeColors.textSecondary }]}
+              >
                 {currentTrack.artist}
               </Text>
             </View>
@@ -169,15 +199,15 @@ export function MiniPlayer({ bottomOffset = 0 }: MiniPlayerProps) {
                   togglePlayPause();
                 }}
                 hitSlop={10}
-                style={styles.playPill}
+                style={[styles.playPill, { backgroundColor: themeColors.textPrimary }]}
               >
                 {isLoadingStream ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
+                  <ActivityIndicator size="small" color={themeColors.textInverse} />
                 ) : (
                   <Ionicons
                     name={isPlaying ? 'pause' : 'play'}
                     size={18}
-                    color={colors.textInverse}
+                    color={themeColors.textInverse}
                     style={!isPlaying ? styles.playNudge : undefined}
                   />
                 )}
@@ -192,7 +222,7 @@ export function MiniPlayer({ bottomOffset = 0 }: MiniPlayerProps) {
                 hitSlop={10}
                 style={styles.controlBtn}
               >
-                <Ionicons name="play-skip-forward" size={19} color={colors.textPrimary} />
+                <Ionicons name="play-skip-forward" size={19} color={themeColors.textPrimary} />
               </Pressable>
             </View>
           </View>
@@ -213,14 +243,14 @@ const styles = StyleSheet.create({
   },
   container: {
     height: layout.miniPlayerHeight,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: 'rgba(24, 24, 28, 0.65)',
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.glassHighlight,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOpacity: 0.55,
-    shadowRadius: 16,
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
   },
@@ -230,7 +260,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.55,
+    opacity: 0.45,
   },
   ambientOverlay: {
     position: 'absolute',
@@ -238,6 +268,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(16, 16, 20, 0.52)',
   },
   content: {
     flex: 1,
@@ -275,7 +306,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: radii.full,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },

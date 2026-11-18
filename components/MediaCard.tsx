@@ -1,12 +1,12 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { colors, radii, spacing, typography } from '../theme';
 import { getHighResArtwork } from '../utils/format';
 import { triggerSelectionHaptic } from '../utils/haptics';
@@ -32,6 +32,7 @@ export const MediaCard = React.memo(function MediaCard({
   circular = false,
   badge,
 }: MediaCardProps) {
+  const { colors: themeColors } = useAppTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -59,6 +60,8 @@ export const MediaCard = React.memo(function MediaCard({
             width: size,
             height: size,
             borderRadius: circular ? radii.full : radii.md,
+            backgroundColor: themeColors.surfaceElevated,
+            borderColor: themeColors.glassBorder,
           },
         ]}
       >
@@ -69,12 +72,6 @@ export const MediaCard = React.memo(function MediaCard({
           transition={200}
           cachePolicy="memory-disk"
         />
-        {!circular ? (
-          <LinearGradient
-            colors={['transparent', 'rgba(7, 7, 11, 0.45)']}
-            style={styles.bottomShade}
-          />
-        ) : null}
         {badge ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{badge}</Text>
@@ -83,14 +80,24 @@ export const MediaCard = React.memo(function MediaCard({
       </View>
       <Text
         numberOfLines={1}
-        style={[typography.bodyMedium, styles.title, circular && styles.centeredText]}
+        style={[
+          typography.bodyMedium,
+          styles.title,
+          { color: themeColors.textPrimary },
+          circular && styles.centeredText,
+        ]}
       >
         {title}
       </Text>
       {subtitle ? (
         <Text
           numberOfLines={1}
-          style={[typography.caption, styles.subtitle, circular && styles.centeredText]}
+          style={[
+            typography.caption,
+            styles.subtitle,
+            { color: themeColors.textSecondary },
+            circular && styles.centeredText,
+          ]}
         >
           {subtitle}
         </Text>
@@ -118,26 +125,19 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  bottomShade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '38%',
-  },
   badge: {
     position: 'absolute',
     bottom: spacing.xs,
     right: spacing.xs,
-    backgroundColor: 'rgba(7, 7, 11, 0.78)',
+    backgroundColor: 'rgba(18, 18, 22, 0.72)',
     paddingHorizontal: spacing.xs,
     paddingVertical: 3,
     borderRadius: radii.xs,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.glassHighlight,
   },
   badgeText: {
-    color: colors.accentLight,
+    color: colors.textPrimary,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,

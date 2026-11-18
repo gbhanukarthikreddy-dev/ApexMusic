@@ -4,14 +4,15 @@ import {
   Dimensions,
   GestureResponderEvent,
   LayoutChangeEvent,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -98,12 +99,7 @@ const PlayerSeekBar = React.memo(function PlayerSeekBar({
         style={styles.seekTouchArea}
       >
         <Animated.View style={[styles.seekTrack, seekTrackStyle]}>
-          <LinearGradient
-            colors={[colors.lavender, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.seekFill, { width: `${progress * 100}%` }]}
-          />
+          <View style={[styles.seekFill, { width: `${progress * 100}%` }]} />
         </Animated.View>
         <Animated.View
           style={[
@@ -233,11 +229,13 @@ export default function PlayerScreen() {
         blurRadius={85}
         cachePolicy="memory-disk"
       />
-      <LinearGradient
-        colors={['rgba(7, 7, 11, 0.48)', 'rgba(12, 10, 22, 0.82)', colors.background]}
-        locations={[0, 0.52, 0.92]}
-        style={styles.backdropGradient}
+      <BlurView
+        intensity={50}
+        tint="systemThinMaterialDark"
+        blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+        style={StyleSheet.absoluteFill}
       />
+      <View style={styles.backdropScrim} pointerEvents="none" />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Top Bar + Handle */}
@@ -371,12 +369,7 @@ export default function PlayerScreen() {
             }}
             style={({ pressed }) => [pressed && styles.playButtonPressed]}
           >
-            <LinearGradient
-              colors={[colors.lavender, colors.accent]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.playButton}
-            >
+            <View style={styles.playButton}>
               {isLoadingStream ? (
                 <ActivityIndicator size="large" color={colors.textInverse} />
               ) : (
@@ -387,7 +380,7 @@ export default function PlayerScreen() {
                   style={!isPlaying ? styles.playIconOffset : undefined}
                 />
               )}
-            </LinearGradient>
+            </View>
           </Pressable>
 
           <Pressable
@@ -464,12 +457,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     opacity: 0.72,
   },
-  backdropGradient: {
+  backdropScrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(7, 7, 10, 0.56)',
   },
   safeArea: {
     flex: 1,
@@ -615,6 +609,7 @@ const styles = StyleSheet.create({
   seekFill: {
     height: '100%',
     borderRadius: radii.full,
+    backgroundColor: colors.textPrimary,
   },
   seekThumb: {
     position: 'absolute',
@@ -677,10 +672,11 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: radii.full,
+    backgroundColor: colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOpacity: 0.55,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
@@ -703,12 +699,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 7,
     borderRadius: radii.full,
-    backgroundColor: 'rgba(139, 92, 246, 0.14)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.32)',
+    borderColor: colors.glassBorder,
   },
   qualityText: {
-    color: colors.accentLight,
+    color: colors.textPrimary,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,

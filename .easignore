@@ -1,5 +1,6 @@
 node_modules
 backend
+website
 .expo
 .tmp-export
 npm-debug.*

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { colors, radii, spacing, typography } from '../theme';
 
 interface ErrorStateProps {
@@ -14,20 +15,34 @@ export function ErrorState({
   message,
   onRetry,
 }: ErrorStateProps) {
+  const { colors: themeColors } = useAppTheme();
   return (
-    <View style={styles.container}>
-      <View style={styles.iconWrap}>
-        <Ionicons name="cloud-offline-outline" size={32} color={colors.error} />
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: themeColors.surface, borderColor: themeColors.border },
+      ]}
+    >
+      <View style={[styles.iconWrap, { backgroundColor: themeColors.errorMuted }]}>
+        <Ionicons name="cloud-offline-outline" size={32} color={themeColors.error} />
       </View>
-      <Text style={[typography.h3, styles.title]}>{title}</Text>
-      <Text style={[typography.body, styles.message]}>{message}</Text>
+      <Text style={[typography.h3, styles.title, { color: themeColors.textPrimary }]}>
+        {title}
+      </Text>
+      <Text style={[typography.body, styles.message, { color: themeColors.textSecondary }]}>
+        {message}
+      </Text>
       {onRetry ? (
         <Pressable
           onPress={onRetry}
-          style={({ pressed }) => [styles.retryBtn, pressed && styles.retryPressed]}
+          style={({ pressed }) => [
+            styles.retryBtn,
+            { backgroundColor: themeColors.textPrimary },
+            pressed && styles.retryPressed,
+          ]}
         >
-          <Ionicons name="refresh" size={16} color={colors.textInverse} />
-          <Text style={styles.retryText}>Try Again</Text>
+          <Ionicons name="refresh" size={16} color={themeColors.textInverse} />
+          <Text style={[styles.retryText, { color: themeColors.textInverse }]}>Try Again</Text>
         </Pressable>
       ) : null}
     </View>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -7,8 +8,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ErrorState } from '../../components/ErrorState';
@@ -108,10 +109,14 @@ export default function PlaylistScreen() {
                     cachePolicy="memory-disk"
                   />
                 ) : null}
-                <LinearGradient
-                  colors={['rgba(7, 7, 11, 0.35)', colors.background]}
-                  style={styles.hero}
-                >
+                <BlurView
+                  intensity={50}
+                  tint="systemThinMaterialDark"
+                  blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.heroGlassScrim} pointerEvents="none" />
+                <View style={styles.hero}>
                   {playlist.artwork ? (
                     <Image
                       source={{ uri: getHighResArtwork(playlist.artwork) }}
@@ -149,12 +154,12 @@ export default function PlaylistScreen() {
                         onPress={() => playQueue(playlist.tracks, 0, true)}
                         style={styles.shuffleBtn}
                       >
-                        <Ionicons name="shuffle" size={18} color={colors.accentLight} />
+                        <Ionicons name="shuffle" size={18} color={colors.textPrimary} />
                         <Text style={styles.shuffleBtnText}>Shuffle</Text>
                       </Pressable>
                     </View>
                   ) : null}
-                </LinearGradient>
+                </View>
               </View>
 
               <View style={styles.trackList}>
@@ -238,6 +243,8 @@ const styles = StyleSheet.create({
   },
   heroWrap: {
     overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
   },
   heroBlurBg: {
     position: 'absolute',
@@ -245,7 +252,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.65,
+    opacity: 0.6,
+  },
+  heroGlassScrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(7, 7, 9, 0.56)',
   },
   hero: {
     alignItems: 'center',
@@ -286,7 +297,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.textPrimary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
@@ -300,15 +311,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassHighlight,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
   },
   shuffleBtnText: {
-    color: colors.accentLight,
+    color: colors.textPrimary,
     fontWeight: '700',
     fontSize: 15,
   },

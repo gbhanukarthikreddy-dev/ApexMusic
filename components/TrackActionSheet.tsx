@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,8 +10,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { useLibraryStore } from '../store/libraryStore';
 import { usePlayerStore } from '../store/playerStore';
 import { useUIStore } from '../store/uiStore';
@@ -32,6 +35,7 @@ export function TrackActionSheet({
   initialMode = 'menu',
 }: TrackActionSheetProps) {
   const router = useRouter();
+  const { isDark, colors: themeColors, chromeBlurTint } = useAppTheme();
   const [showPlaylistPicker, setShowPlaylistPicker] = useState(initialMode === 'playlist');
   const [newPlaylistName, setNewPlaylistName] = useState('');
 
@@ -84,10 +88,34 @@ export function TrackActionSheet({
       onRequestClose={handleClose}
     >
       <Pressable style={styles.backdrop} onPress={handleClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.handle} />
+        <Pressable
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: isDark ? 'rgba(24, 24, 28, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+              borderColor: themeColors.glassBorder,
+            },
+          ]}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <BlurView
+            intensity={80}
+            tint={chromeBlurTint}
+            blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[
+              styles.handle,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255, 255, 255, 0.22)'
+                  : 'rgba(60, 60, 67, 0.28)',
+              },
+            ]}
+          />
 
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: themeColors.borderSubtle }]}>
             <Image
               source={{ uri: getHighResArtwork(track.artwork) }}
               style={styles.artwork}
@@ -95,10 +123,10 @@ export function TrackActionSheet({
               cachePolicy="memory-disk"
             />
             <View style={styles.headerMeta}>
-              <Text numberOfLines={1} style={typography.subtitle}>
+              <Text numberOfLines={1} style={[typography.subtitle, { color: themeColors.textPrimary }]}>
                 {track.title}
               </Text>
-              <Text numberOfLines={1} style={typography.caption}>
+              <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
                 {track.artist}
               </Text>
             </View>
@@ -239,17 +267,23 @@ function ActionItem({
   onPress: () => void;
   accent?: boolean;
 }) {
+  const { colors: themeColors } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.actionRow, pressed && styles.actionPressed]}
+      style={({ pressed }) => [
+        styles.actionRow,
+        pressed && { backgroundColor: themeColors.surfaceHighlight },
+      ]}
     >
       <Ionicons
         name={icon}
         size={21}
-        color={accent ? colors.accent : colors.textSecondary}
+        color={accent ? themeColors.accent : themeColors.textSecondary}
       />
-      <Text style={[typography.bodyMedium, styles.actionLabel]}>{label}</Text>
+      <Text style={[typography.bodyMedium, styles.actionLabel, { color: themeColors.textPrimary }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -261,12 +295,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(24, 24, 28, 0.78)',
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
+    overflow: 'hidden',
     paddingBottom: spacing.xxl,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.glassHighlight,
     maxHeight: '80%',
   },
   handle: {

@@ -128,6 +128,9 @@ export interface HistoryEntry {
 export interface DownloadPlaceholder {
   track: Track;
   addedAt: number;
-  status: 'queued' | 'cached_metadata';
+  status: 'queued' | 'downloading' | 'downloaded' | 'error' | 'cached_metadata';
   estimatedSizeMb: number;
+  localUri?: string;
+  sizeBytes?: number;
+  error?: string;
 }

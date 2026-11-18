@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { AudioPlayer, AudioStatus, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { Track } from '../types/music';
+import { getHighResArtwork } from '../utils/format';
 
 const isExpoGoAndroid =
   Platform.OS === 'android' &&
@@ -56,8 +57,8 @@ class AudioService {
       player.replace({ uri: url });
     }
 
-    // Android lock-screen service binding requires a development build with
-    // enableBackgroundPlayback: true in app.json; skip in Expo Go to avoid redbox errors.
+    // Android lock-screen / media notification service binding requires a development build or
+    // standalone APK with enableBackgroundPlayback: true in app.json; skip in Expo Go.
     if (!isExpoGoAndroid) {
       try {
         player.setActiveForLockScreen(
@@ -66,9 +67,11 @@ class AudioService {
             title: track.title,
             artist: track.artist,
             albumTitle: track.album || 'Apex Music',
-            artworkUrl: track.artwork,
+            artworkUrl: getHighResArtwork(track.artwork),
           },
           {
+            showNextTrack: true,
+            showPreviousTrack: true,
             showSeekForward: true,
             showSeekBackward: true,
           }
@@ -79,6 +82,20 @@ class AudioService {
     }
 
     player.play();
+  }
+
+  updateLockScreenMetadata(track: Track): void {
+    if (!this.player || isExpoGoAndroid) return;
+    try {
+      this.player.updateLockScreenMetadata({
+        title: track.title,
+        artist: track.artist,
+        albumTitle: track.album || 'Apex Music',
+        artworkUrl: getHighResArtwork(track.artwork),
+      });
+    } catch {
+      // Ignore if lock screen controls are not active
+    }
   }
 
   play(): void {

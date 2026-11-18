@@ -2,6 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
+  deleteOfflineTrackFile,
+  downloadTrackAudio,
+  getPlayableOfflineUri,
+} from '../services/offlineDownloadService';
+import {
   AudioQuality,
   DownloadPlaceholder,
   HistoryEntry,
@@ -9,6 +14,7 @@ import {
   Track,
   UserPlaylist,
 } from '../types/music';
+import { useUIStore } from './uiStore';
 
 const MAX_HISTORY_ITEMS = 100;
 const MAX_RECENT_SEARCHES = 15;
@@ -38,7 +44,9 @@ interface LibraryState {
   clearRecentSearches: () => void;
 
   toggleDownloadPlaceholder: (track: Track) => void;
+  retryOfflineDownload: (track: Track) => void;
   isDownloadedPlaceholder: (trackId: string) => boolean;
+  getOfflineUri: (trackId: string) => string | null;
 
   setAudioQuality: (quality: AudioQuality) => void;
   setCachedHomeFeed: (feed: HomeFeedResponse) => void;
@@ -148,23 +156,80 @@ export const useLibraryStore = create<LibraryState>()(
       clearRecentSearches: () => set({ recentSearches: [] }),
 
       toggleDownloadPlaceholder: (track) => {
-        const exists = get().downloads.some((d) => d.track.id === track.id);
-        set((state) => ({
-          downloads: exists
-            ? state.downloads.filter((d) => d.track.id !== track.id)
-            : [
-                {
-                  track,
-                  addedAt: Date.now(),
-                  status: 'cached_metadata',
-                  estimatedSizeMb: Math.max(2.4, Number(((track.duration || 200) * 0.024).toFixed(1))),
-                },
-                ...state.downloads,
-              ],
-        }));
+        const existing = get().downloads.find((d) => d.track.id === track.id);
+        if (existing) {
+          deleteOfflineTrackFile(existing.localUri);
+          set((state) => ({
+            downloads: state.downloads.filter((d) => d.track.id !== track.id),
+          }));
+          useUIStore.getState().showToast('Removed from Offline Songs');
+          return;
+        }
+
+        get().retryOfflineDownload(track);
+      },
+
+      retryOfflineDownload: (track) => {
+        const quality = get().audioQuality;
+        const estimated = Math.max(
+          2.4,
+          Number(((track.duration || 200) * 0.024).toFixed(1))
+        );
+
+        set((state) => {
+          const others = state.downloads.filter((d) => d.track.id !== track.id);
+          return {
+            downloads: [
+              {
+                track,
+                addedAt: Date.now(),
+                status: 'downloading',
+                estimatedSizeMb: estimated,
+              },
+              ...others,
+            ],
+          };
+        });
+        useUIStore.getState().showToast(`Downloading "${track.title}"...`);
+
+        void downloadTrackAudio(track, quality)
+          .then(({ localUri, sizeBytes, sizeMb }) => {
+            set((state) => ({
+              downloads: state.downloads.map((d) =>
+                d.track.id === track.id
+                  ? {
+                      ...d,
+                      status: 'downloaded',
+                      localUri,
+                      sizeBytes,
+                      estimatedSizeMb: sizeMb,
+                      error: undefined,
+                    }
+                  : d
+              ),
+            }));
+            useUIStore.getState().showToast(`Saved "${track.title}" for offline`);
+          })
+          .catch((err) => {
+            const msg = err instanceof Error ? err.message : 'Download failed';
+            set((state) => ({
+              downloads: state.downloads.map((d) =>
+                d.track.id === track.id
+                  ? { ...d, status: 'error', error: msg }
+                  : d
+              ),
+            }));
+            useUIStore.getState().showToast('Offline download failed');
+          });
       },
 
       isDownloadedPlaceholder: (trackId) => get().downloads.some((d) => d.track.id === trackId),
+
+      getOfflineUri: (trackId) => {
+        const item = get().downloads.find((d) => d.track.id === trackId);
+        if (!item || item.status !== 'downloaded') return null;
+        return getPlayableOfflineUri(item.localUri);
+      },
 
       setAudioQuality: (audioQuality) => set({ audioQuality }),
 

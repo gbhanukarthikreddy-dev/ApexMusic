@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,16 +11,18 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApexLogo } from '../../components/ApexLogo';
 import { ErrorState } from '../../components/ErrorState';
+import { FadeOnFocus } from '../../components/FadeOnFocus';
 import { MediaCard } from '../../components/MediaCard';
 import { HomeSkeleton } from '../../components/Skeleton';
 import { TrackActionSheet } from '../../components/TrackActionSheet';
 import { TrackRow } from '../../components/TrackRow';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { musicApi } from '../../services/musicApi';
 import { useLibraryStore } from '../../store/libraryStore';
 import { usePlayerStore } from '../../store/playerStore';
@@ -42,12 +45,17 @@ const FILTERS: Array<{ key: HomeFilter; label: string }> = [
   { key: 'playlists', label: 'Top Playlists' },
 ];
 
-const HERO_CARD_PALETTES = [
-  { bg: '#CFA7F8', playBg: '#4A1D7A', text: '#13111C', sub: '#322845' },
-  { bg: '#C6E63B', playBg: '#1D2905', text: '#111408', sub: '#323B16' },
-  { bg: '#F2B5D4', playBg: '#5C163B', text: '#1A0E16', sub: '#452436' },
-  { bg: '#9AD4F5', playBg: '#0E3A5C', text: '#0B1622', sub: '#213B52' },
-] as const;
+const HOME_LANGUAGES: { label: string; query: string }[] = [
+  { label: 'English', query: 'english top hits' },
+  { label: 'Hindi', query: 'hindi bollywood top hits' },
+  { label: 'Telugu', query: 'telugu top hits songs' },
+  { label: 'Tamil', query: 'tamil top hits songs' },
+  { label: 'Punjabi', query: 'punjabi top hits' },
+  { label: 'Malayalam', query: 'malayalam top hits' },
+  { label: 'Kannada', query: 'kannada top hits' },
+  { label: 'K-Pop', query: 'kpop top hits' },
+  { label: 'Spanish', query: 'latin spanish top hits' },
+];
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CURATED_CARD_WIDTH = SCREEN_WIDTH - 68;
@@ -62,6 +70,7 @@ function getGreeting(): string {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useAppTheme();
   const playTrack = usePlayerStore((s) => s.playTrack);
   const playQueue = usePlayerStore((s) => s.playQueue);
   const hasMiniPlayer = usePlayerStore((s) => Boolean(s.currentTrack));
@@ -134,16 +143,9 @@ export default function HomeScreen() {
   const bottomPad = insets.bottom + (hasMiniPlayer ? 168 : 98);
 
   return (
-    <View style={styles.root}>
-      {/* Reference-style soft top-left pink/violet ambient aura */}
-      <LinearGradient
-        colors={['rgba(236, 72, 153, 0.34)', 'rgba(139, 92, 246, 0.22)', 'rgba(14, 14, 18, 0)']}
-        start={{ x: 0.05, y: 0 }}
-        end={{ x: 0.8, y: 0.85 }}
-        style={styles.topLeftAura}
-      />
-
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <FadeOnFocus>
+      <View style={[styles.root, { backgroundColor: themeColors.background }]}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView
           contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
           refreshControl={
@@ -175,25 +177,39 @@ export default function HomeScreen() {
                     triggerLightHaptic();
                     router.push('/(tabs)/search');
                   }}
-                  style={styles.circleIconBtn}
+                  style={[
+                    styles.circleIconBtn,
+                    {
+                      backgroundColor: themeColors.surfaceElevated,
+                      borderColor: themeColors.glassBorder,
+                    },
+                  ]}
                   hitSlop={8}
                 >
-                  <Ionicons name="search" size={19} color={colors.textPrimary} />
+                  <Ionicons name="search" size={19} color={themeColors.textPrimary} />
                 </Pressable>
                 <Pressable
                   onPress={() => {
                     triggerLightHaptic();
                     router.push('/(tabs)/library');
                   }}
-                  style={styles.circleIconBtn}
+                  style={[
+                    styles.circleIconBtn,
+                    {
+                      backgroundColor: themeColors.surfaceElevated,
+                      borderColor: themeColors.glassBorder,
+                    },
+                  ]}
                   hitSlop={8}
                 >
-                  <Ionicons name="heart-outline" size={19} color={colors.textPrimary} />
+                  <Ionicons name="heart-outline" size={19} color={themeColors.textPrimary} />
                 </Pressable>
               </View>
             </View>
 
-            <Text style={styles.greetingTitle}>{getGreeting()}</Text>
+            <Text style={[styles.greetingTitle, { color: themeColors.textPrimary }]}>
+              {getGreeting()}
+            </Text>
 
             {/* Filter Pills */}
             <ScrollView
@@ -210,9 +226,23 @@ export default function HomeScreen() {
                       triggerSelectionHaptic();
                       setActiveFilter(f.key);
                     }}
-                    style={[styles.filterPill, active && styles.filterPillActive]}
+                    style={[
+                      styles.filterPill,
+                      {
+                        backgroundColor: active
+                          ? themeColors.textPrimary
+                          : themeColors.surfaceElevated,
+                        borderColor: active ? themeColors.textPrimary : themeColors.glassBorder,
+                      },
+                    ]}
                   >
-                    <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                    <Text
+                      style={[
+                        styles.filterText,
+                        { color: active ? themeColors.textInverse : themeColors.textPrimary },
+                        active && styles.filterTextActive,
+                      ]}
+                    >
                       {f.label}
                     </Text>
                   </Pressable>
@@ -235,7 +265,9 @@ export default function HomeScreen() {
               {showCurated && feed.trending.length > 0 ? (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={typography.h2}>Curated & trending</Text>
+                    <Text style={[typography.h2, { color: themeColors.textPrimary }]}>
+                      Curated & trending
+                    </Text>
                   </View>
 
                   <FlatList
@@ -249,10 +281,10 @@ export default function HomeScreen() {
                     maxToRenderPerBatch={3}
                     removeClippedSubviews
                     keyExtractor={(item) => `curated_${item.id}`}
-                    renderItem={({ item, index }) => {
-                      const palette = HERO_CARD_PALETTES[index % HERO_CARD_PALETTES.length];
+                    renderItem={({ item }) => {
                       const liked = likedSongs.some((t) => t.id === item.id);
                       const saved = downloads.some((d) => d.track.id === item.id);
+                      const artUri = getHighResArtwork(item.artwork);
 
                       return (
                         <Pressable
@@ -260,20 +292,31 @@ export default function HomeScreen() {
                             triggerLightHaptic();
                             void playTrack(item, feed.trending);
                           }}
-                          style={[styles.curatedCard, { backgroundColor: palette.bg }]}
+                          style={styles.curatedCard}
                         >
+                          <Image
+                            source={{ uri: artUri }}
+                            style={styles.curatedGlassBg}
+                            contentFit="cover"
+                            blurRadius={55}
+                            cachePolicy="memory-disk"
+                          />
+                          <BlurView
+                            intensity={55}
+                            tint="systemThinMaterialDark"
+                            blurMethod={
+                              Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined
+                            }
+                            style={StyleSheet.absoluteFill}
+                          />
+                          <View style={styles.curatedGlassTint} pointerEvents="none" />
+
                           <View style={styles.curatedLeft}>
                             <View style={styles.curatedTextBlock}>
-                              <Text
-                                numberOfLines={1}
-                                style={[styles.curatedTitle, { color: palette.text }]}
-                              >
+                              <Text numberOfLines={1} style={styles.curatedTitle}>
                                 {item.title}
                               </Text>
-                              <Text
-                                numberOfLines={2}
-                                style={[styles.curatedSub, { color: palette.sub }]}
-                              >
+                              <Text numberOfLines={2} style={styles.curatedSub}>
                                 {item.artist}
                                 {item.album ? ` • ${item.album}` : ''}
                               </Text>
@@ -286,12 +329,12 @@ export default function HomeScreen() {
                                   triggerLightHaptic();
                                   void playTrack(item, feed.trending);
                                 }}
-                                style={[styles.curatedPlayBtn, { backgroundColor: palette.playBg }]}
+                                style={styles.curatedPlayBtn}
                               >
                                 <Ionicons
                                   name="play"
                                   size={18}
-                                  color="#FFFFFF"
+                                  color={colors.textInverse}
                                   style={styles.playIconNudge}
                                 />
                               </Pressable>
@@ -307,7 +350,7 @@ export default function HomeScreen() {
                                 <Ionicons
                                   name={liked ? 'heart' : 'heart-outline'}
                                   size={20}
-                                  color={palette.text}
+                                  color={liked ? colors.accent : colors.textPrimary}
                                 />
                               </Pressable>
 
@@ -322,7 +365,7 @@ export default function HomeScreen() {
                                 <Ionicons
                                   name={saved ? 'arrow-down-circle' : 'arrow-down-circle-outline'}
                                   size={20}
-                                  color={palette.text}
+                                  color={saved ? colors.accent : colors.textPrimary}
                                 />
                               </Pressable>
 
@@ -336,18 +379,20 @@ export default function HomeScreen() {
                                 <Ionicons
                                   name="ellipsis-horizontal"
                                   size={19}
-                                  color={palette.text}
+                                  color={colors.textPrimary}
                                 />
                               </Pressable>
                             </View>
                           </View>
 
-                          <Image
-                            source={{ uri: getHighResArtwork(item.artwork) }}
-                            style={styles.curatedArt}
-                            contentFit="cover"
-                            cachePolicy="memory-disk"
-                          />
+                          <View style={styles.curatedArtWrap}>
+                            <Image
+                              source={{ uri: artUri }}
+                              style={styles.curatedArt}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                            />
+                          </View>
                         </Pressable>
                       );
                     }}
@@ -359,9 +404,13 @@ export default function HomeScreen() {
               {showPlaylists && feed.recommendedPlaylists.length > 0 ? (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={typography.h2}>Top daily playlists</Text>
+                    <Text style={[typography.h2, { color: themeColors.textPrimary }]}>
+                      Top daily playlists
+                    </Text>
                     <Pressable onPress={() => router.push('/(tabs)/search')}>
-                      <Text style={styles.seeAll}>See all</Text>
+                      <Text style={[styles.seeAll, { color: themeColors.textSecondary }]}>
+                        See all
+                      </Text>
                     </Pressable>
                   </View>
 
@@ -385,18 +434,32 @@ export default function HomeScreen() {
                           cachePolicy="memory-disk"
                         />
                         <View style={styles.playlistMeta}>
-                          <Text numberOfLines={1} style={styles.playlistTitle}>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.playlistTitle, { color: themeColors.textPrimary }]}
+                          >
                             {pl.title}
                           </Text>
-                          <Text numberOfLines={1} style={styles.playlistSub}>
+                          <Text
+                            numberOfLines={1}
+                            style={[styles.playlistSub, { color: themeColors.textSecondary }]}
+                          >
                             {pl.subtitle || 'Apex Curated Mix'}
                           </Text>
                         </View>
-                        <View style={styles.playlistPlayCircle}>
+                        <View
+                          style={[
+                            styles.playlistPlayCircle,
+                            {
+                              backgroundColor: themeColors.surfaceElevated,
+                              borderColor: themeColors.glassBorder,
+                            },
+                          ]}
+                        >
                           <Ionicons
                             name="play"
                             size={14}
-                            color={colors.textPrimary}
+                            color={themeColors.textPrimary}
                             style={styles.playIconSmallNudge}
                           />
                         </View>
@@ -406,11 +469,53 @@ export default function HomeScreen() {
                 </View>
               ) : null}
 
+              {/* Browse by Language */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[typography.h2, { color: themeColors.textPrimary }]}>
+                    Languages
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.langRow}
+                >
+                  {HOME_LANGUAGES.map((lang) => (
+                    <Pressable
+                      key={lang.label}
+                      onPress={() => {
+                        triggerSelectionHaptic();
+                        router.push({
+                          pathname: '/(tabs)/search',
+                          params: { q: lang.query },
+                        });
+                      }}
+                      style={({ pressed }) => [
+                        styles.langPill,
+                        {
+                          backgroundColor: themeColors.surfaceElevated,
+                          borderColor: themeColors.glassBorder,
+                        },
+                        pressed && styles.playlistRowPressed,
+                      ]}
+                    >
+                      <Ionicons name="language" size={15} color={themeColors.textSecondary} />
+                      <Text style={[styles.langPillText, { color: themeColors.textPrimary }]}>
+                        {lang.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+
               {/* New Releases Carousel */}
               {showReleases && feed.newReleases.length > 0 ? (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={typography.h2}>New releases</Text>
+                    <Text style={[typography.h2, { color: themeColors.textPrimary }]}>
+                      New releases
+                    </Text>
                     <Pressable onPress={() => router.push('/(tabs)/search')}>
                       <Text style={styles.seeAll}>See all</Text>
                     </Pressable>
@@ -444,14 +549,18 @@ export default function HomeScreen() {
               {showCurated && feed.trending.length > 0 ? (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={typography.h2}>Quick picks</Text>
+                    <Text style={[typography.h2, { color: themeColors.textPrimary }]}>
+                      Quick picks
+                    </Text>
                     <Pressable
                       onPress={() => {
                         triggerLightHaptic();
                         void playQueue(feed.trending, 0, true);
                       }}
                     >
-                      <Text style={styles.seeAll}>Shuffle all</Text>
+                      <Text style={[styles.seeAll, { color: themeColors.textSecondary }]}>
+                        Shuffle all
+                      </Text>
                     </Pressable>
                   </View>
                   <View>
@@ -476,7 +585,8 @@ export default function HomeScreen() {
           onClose={() => setSelectedTrack(null)}
         />
       </SafeAreaView>
-    </View>
+      </View>
+    </FadeOnFocus>
   );
 }
 
@@ -484,14 +594,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  topLeftAura: {
-    position: 'absolute',
-    top: -30,
-    left: -40,
-    width: 300,
-    height: 260,
-    borderRadius: 150,
   },
   safeArea: {
     flex: 1,
@@ -543,13 +645,13 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.glassBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
   },
   filterText: {
     color: colors.textPrimary,
@@ -584,6 +686,17 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     flexDirection: 'row',
     overflow: 'hidden',
+    backgroundColor: 'rgba(24, 24, 28, 0.72)',
+    borderWidth: 1,
+    borderColor: colors.glassHighlight,
+  },
+  curatedGlassBg: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.52,
+  },
+  curatedGlassTint: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(14, 14, 18, 0.56)',
   },
   curatedLeft: {
     flex: 1,
@@ -597,11 +710,13 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '800',
     letterSpacing: -0.4,
+    color: colors.textPrimary,
   },
   curatedSub: {
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
+    color: colors.textSecondary,
   },
   curatedActions: {
     flexDirection: 'row',
@@ -612,6 +727,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radii.full,
+    backgroundColor: colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -621,9 +737,16 @@ const styles = StyleSheet.create({
   playIconSmallNudge: {
     marginLeft: 1.5,
   },
+  curatedArtWrap: {
+    padding: spacing.sm,
+    justifyContent: 'center',
+  },
   curatedArt: {
-    width: 124,
-    height: '100%',
+    width: 112,
+    height: 140,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   playlistList: {
     paddingHorizontal: spacing.lg,
@@ -672,5 +795,22 @@ const styles = StyleSheet.create({
   },
   carouselList: {
     paddingHorizontal: spacing.lg,
+  },
+  langRow: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.xs,
+  },
+  langPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  langPillText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

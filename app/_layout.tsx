@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastBanner } from '../components/ToastBanner';
 import { TrackActionSheet } from '../components/TrackActionSheet';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { useAudioController } from '../hooks/useAudioController';
 import { useUIStore } from '../store/uiStore';
 import { colors, radii, spacing } from '../theme';
@@ -23,18 +24,20 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 export default function RootLayout() {
   useAudioController();
+  const { isDark, colors: themeColors } = useAppTheme();
   const sheetTrack = useUIStore((s) => s.sheetTrack);
   const sheetMode = useUIStore((s) => s.sheetMode);
   const closeTrackSheet = useUIStore((s) => s.closeTrackSheet);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="light" />
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: themeColors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: themeColors.background },
+          animation: 'default',
+          gestureEnabled: true,
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -43,6 +46,7 @@ export default function RootLayout() {
           options={{
             presentation: 'modal',
             animation: 'slide_from_bottom',
+            animationDuration: 300,
             gestureEnabled: true,
           }}
         />
@@ -51,6 +55,7 @@ export default function RootLayout() {
           options={{
             presentation: 'modal',
             animation: 'slide_from_bottom',
+            animationDuration: 280,
             gestureEnabled: true,
           }}
         />

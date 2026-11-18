@@ -71,18 +71,20 @@ async function loadTrackByIndex(
   useLibraryStore.getState().recordPlay(track);
 
   try {
-    const quality = useLibraryStore.getState().audioQuality;
-    const stream = await musicApi.getStreamUrl(track.id, quality);
+    const libraryState = useLibraryStore.getState();
+    const offlineUri = libraryState.getOfflineUri(track.id);
+    const quality = libraryState.audioQuality;
+    const playableUrl = offlineUri ?? (await musicApi.getStreamUrl(track.id, quality)).url;
 
     // Ignore stale request if user already skipped to another track
     if (get().activeRequestId !== requestId) return;
 
-    await audioService.loadAndPlay(stream.url, track);
+    await audioService.loadAndPlay(playableUrl, track);
     if (get().activeRequestId !== requestId) return;
 
     audioService.setLoop(get().repeatMode === 'one');
     set({
-      streamUrl: stream.url,
+      streamUrl: playableUrl,
       isLoadingStream: false,
       isPlaying: true,
       streamError: null,
@@ -90,7 +92,7 @@ async function loadTrackByIndex(
 
     // Pre-warm the next track in the queue so skipping is instant
     const nextTrack = queue[index + 1];
-    if (nextTrack) {
+    if (nextTrack && !libraryState.getOfflineUri(nextTrack.id)) {
       musicApi.prefetchStream(nextTrack.id, quality);
     }
   } catch (err) {

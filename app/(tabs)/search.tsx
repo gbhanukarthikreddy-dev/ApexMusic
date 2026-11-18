@@ -11,13 +11,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorState } from '../../components/ErrorState';
+import { FadeOnFocus } from '../../components/FadeOnFocus';
 import { TrackListSkeleton } from '../../components/Skeleton';
 import { TrackActionSheet } from '../../components/TrackActionSheet';
 import { TrackRow } from '../../components/TrackRow';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDebounce } from '../../hooks/useDebounce';
 import { musicApi } from '../../services/musicApi';
 import { useLibraryStore } from '../../store/libraryStore';
@@ -43,20 +44,41 @@ const TABS: Array<{ key: SearchTab; label: string }> = [
 const MOOD_CARDS: Array<{
   label: string;
   query: string;
-  colors: [string, string];
+  tint: string;
+  iconColor: string;
   icon: keyof typeof Ionicons.glyphMap;
 }> = [
-  { label: 'Lo-Fi Chill', query: 'lofi beats chill', colors: ['#4C1D95', '#7C3AED'], icon: 'headset' },
-  { label: 'Synthwave', query: 'synthwave retrowave', colors: ['#831843', '#DB2777'], icon: 'planet' },
-  { label: 'Hip-Hop', query: 'hip hop hits', colors: ['#7C2D12', '#EA580C'], icon: 'mic' },
-  { label: 'Pop Hits', query: 'top pop hits', colors: ['#1E3A8A', '#2563EB'], icon: 'sparkles' },
-  { label: 'Workout', query: 'workout gym music', colors: ['#064E3B', '#059669'], icon: 'flash' },
-  { label: 'Acoustic', query: 'acoustic indie chill', colors: ['#713F12', '#CA8A04'], icon: 'musical-notes' },
+  { label: 'Lo-Fi Chill', query: 'lofi beats chill', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF', icon: 'headset' },
+  { label: 'Synthwave', query: 'synthwave retrowave', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F', icon: 'planet' },
+  { label: 'Hip-Hop', query: 'hip hop hits', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A', icon: 'mic' },
+  { label: 'Pop Hits', query: 'top pop hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF', icon: 'sparkles' },
+  { label: 'Workout', query: 'workout gym music', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158', icon: 'flash' },
+  { label: 'Acoustic', query: 'acoustic indie chill', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A', icon: 'musical-notes' },
+];
+
+const LANGUAGE_CARDS: {
+  label: string;
+  native: string;
+  query: string;
+  tint: string;
+  iconColor: string;
+}[] = [
+  { label: 'English', native: 'Global Hits', query: 'english top hits', tint: 'rgba(10, 132, 255, 0.16)', iconColor: '#0A84FF' },
+  { label: 'Hindi', native: 'हिन्दी', query: 'hindi bollywood top hits', tint: 'rgba(250, 45, 72, 0.16)', iconColor: '#FA2D48' },
+  { label: 'Telugu', native: 'తెలుగు', query: 'telugu top hits songs', tint: 'rgba(255, 159, 10, 0.16)', iconColor: '#FF9F0A' },
+  { label: 'Tamil', native: 'தமிழ்', query: 'tamil top hits songs', tint: 'rgba(48, 209, 88, 0.16)', iconColor: '#30D158' },
+  { label: 'Punjabi', native: 'ਪੰਜਾਬੀ', query: 'punjabi top hits', tint: 'rgba(255, 55, 95, 0.16)', iconColor: '#FF375F' },
+  { label: 'Malayalam', native: 'മലയാളം', query: 'malayalam top hits', tint: 'rgba(100, 210, 255, 0.16)', iconColor: '#64D2FF' },
+  { label: 'Kannada', native: 'ಕನ್ನಡ', query: 'kannada top hits', tint: 'rgba(255, 214, 10, 0.16)', iconColor: '#FFD60A' },
+  { label: 'K-Pop', native: '한국어', query: 'kpop top hits', tint: 'rgba(191, 90, 242, 0.16)', iconColor: '#BF5AF2' },
+  { label: 'Spanish', native: 'Español', query: 'latin spanish top hits', tint: 'rgba(255, 105, 97, 0.16)', iconColor: '#FF6961' },
 ];
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { q } = useLocalSearchParams<{ q?: string }>();
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useAppTheme();
   const playTrack = usePlayerStore((s) => s.playTrack);
   const hasMiniPlayer = usePlayerStore((s) => Boolean(s.currentTrack));
 
@@ -65,12 +87,19 @@ export default function SearchScreen() {
   const removeRecentSearch = useLibraryStore((s) => s.removeRecentSearch);
   const clearRecentSearches = useLibraryStore((s) => s.clearRecentSearches);
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(typeof q === 'string' ? q : '');
   const debouncedQuery = useDebounce(query.trim(), 200);
 
   const [activeTab, setActiveTab] = useState<SearchTab>('songs');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (typeof q === 'string' && q.trim().length > 0) {
+      setQuery(q);
+      setShowSuggestions(false);
+    }
+  }, [q]);
 
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
@@ -145,19 +174,24 @@ export default function SearchScreen() {
       {recentSearches.length > 0 ? (
         <View style={styles.recentSection}>
           <View style={styles.recentHeader}>
-            <Text style={typography.h3}>Recent Searches</Text>
+            <Text style={[typography.h3, { color: themeColors.textPrimary }]}>
+              Recent Searches
+            </Text>
             <Pressable onPress={clearRecentSearches}>
-              <Text style={styles.clearAll}>Clear All</Text>
+              <Text style={[styles.clearAll, { color: themeColors.accent }]}>Clear All</Text>
             </Pressable>
           </View>
           {recentSearches.map((term) => (
             <Pressable
               key={term}
               onPress={() => handleSelectSuggestion(term)}
-              style={styles.recentRow}
+              style={[styles.recentRow, { borderBottomColor: themeColors.borderSubtle }]}
             >
-              <Ionicons name="time-outline" size={18} color={colors.textMuted} />
-              <Text numberOfLines={1} style={[typography.body, styles.recentText]}>
+              <Ionicons name="time-outline" size={18} color={themeColors.textMuted} />
+              <Text
+                numberOfLines={1}
+                style={[typography.body, styles.recentText, { color: themeColors.textPrimary }]}
+              >
                 {term}
               </Text>
               <Pressable
@@ -167,7 +201,7 @@ export default function SearchScreen() {
                 }}
                 hitSlop={10}
               >
-                <Ionicons name="close" size={18} color={colors.textMuted} />
+                <Ionicons name="close" size={18} color={themeColors.textMuted} />
               </Pressable>
             </Pressable>
           ))}
@@ -175,23 +209,70 @@ export default function SearchScreen() {
       ) : null}
 
       <View style={styles.moodSection}>
-        <Text style={typography.h3}>Browse Moods & Genres</Text>
+        <Text style={[typography.h3, { color: themeColors.textPrimary }]}>
+          Browse Moods & Genres
+        </Text>
         <View style={styles.moodGrid}>
           {MOOD_CARDS.map((card) => (
             <Pressable
               key={card.label}
               onPress={() => handleSelectSuggestion(card.query)}
-              style={({ pressed }) => [styles.moodTile, pressed && styles.moodTilePressed]}
+              style={({ pressed }) => [
+                styles.moodTile,
+                {
+                  backgroundColor: themeColors.surface,
+                  borderColor: themeColors.glassBorder,
+                },
+                pressed && styles.moodTilePressed,
+              ]}
             >
-              <LinearGradient
-                colors={card.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.moodGradient}
-              >
-                <Text style={styles.moodLabel}>{card.label}</Text>
-                <Ionicons name={card.icon} size={22} color="rgba(255,255,255,0.85)" />
-              </LinearGradient>
+              <View style={styles.moodGlassInner}>
+                <View style={[styles.moodIconBadge, { backgroundColor: card.tint }]}>
+                  <Ionicons name={card.icon} size={18} color={card.iconColor} />
+                </View>
+                <Text style={[styles.moodLabel, { color: themeColors.textPrimary }]}>
+                  {card.label}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.moodSection}>
+        <Text style={[typography.h3, { color: themeColors.textPrimary }]}>
+          Browse by Language
+        </Text>
+        <View style={styles.moodGrid}>
+          {LANGUAGE_CARDS.map((lang) => (
+            <Pressable
+              key={lang.label}
+              onPress={() => handleSelectSuggestion(lang.query)}
+              style={({ pressed }) => [
+                styles.moodTile,
+                {
+                  backgroundColor: themeColors.surface,
+                  borderColor: themeColors.glassBorder,
+                },
+                pressed && styles.moodTilePressed,
+              ]}
+            >
+              <View style={styles.moodGlassInner}>
+                <View style={styles.langTopRow}>
+                  <View style={[styles.moodIconBadge, { backgroundColor: lang.tint }]}>
+                    <Ionicons name="language" size={17} color={lang.iconColor} />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.langNative, { color: themeColors.textSecondary }]}
+                  >
+                    {lang.native}
+                  </Text>
+                </View>
+                <Text style={[styles.moodLabel, { color: themeColors.textPrimary }]}>
+                  {lang.label}
+                </Text>
+              </View>
             </Pressable>
           ))}
         </View>
@@ -211,14 +292,14 @@ export default function SearchScreen() {
         cachePolicy="memory-disk"
       />
       <View style={styles.entityMeta}>
-        <Text numberOfLines={1} style={typography.bodyMedium}>
+        <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
           {item.title}
         </Text>
-        <Text numberOfLines={1} style={typography.caption}>
+        <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
           {[item.type || 'Album', item.artist, item.year].filter(Boolean).join(' • ')}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={themeColors.textMuted} />
     </Pressable>
   );
 
@@ -234,14 +315,14 @@ export default function SearchScreen() {
         cachePolicy="memory-disk"
       />
       <View style={styles.entityMeta}>
-        <Text numberOfLines={1} style={typography.bodyMedium}>
+        <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
           {item.name}
         </Text>
-        <Text numberOfLines={1} style={typography.caption}>
+        <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
           {item.subscribers || 'Artist'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={themeColors.textMuted} />
     </Pressable>
   );
 
@@ -257,14 +338,14 @@ export default function SearchScreen() {
         cachePolicy="memory-disk"
       />
       <View style={styles.entityMeta}>
-        <Text numberOfLines={1} style={typography.bodyMedium}>
+        <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
           {item.title}
         </Text>
-        <Text numberOfLines={1} style={typography.caption}>
+        <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
           {item.subtitle || 'Playlist'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={themeColors.textMuted} />
     </Pressable>
   );
 
@@ -345,13 +426,25 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <FadeOnFocus>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeColors.background }]}
+        edges={['top']}
+      >
       <View style={styles.header}>
-        <Text style={typography.h1}>Search</Text>
+        <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Search</Text>
       </View>
 
-      <View style={styles.searchBarWrap}>
-        <Ionicons name="search" size={18} color={colors.textMuted} />
+      <View
+        style={[
+          styles.searchBarWrap,
+          {
+            backgroundColor: themeColors.surface,
+            borderColor: themeColors.border,
+          },
+        ]}
+      >
+        <Ionicons name="search" size={18} color={themeColors.textMuted} />
         <TextInput
           value={query}
           onChangeText={(text) => {
@@ -364,8 +457,8 @@ export default function SearchScreen() {
             void runSearch(query);
           }}
           placeholder="Songs, artists, albums, playlists..."
-          placeholderTextColor={colors.textMuted}
-          style={styles.searchInput}
+          placeholderTextColor={themeColors.textMuted}
+          style={[styles.searchInput, { color: themeColors.textPrimary }]}
           returnKeyType="search"
           autoCapitalize="none"
           autoCorrect={false}
@@ -386,18 +479,26 @@ export default function SearchScreen() {
 
       {/* Suggestions strip while typing */}
       {showSuggestions && query.trim().length > 0 && suggestions.length > 0 ? (
-        <View style={styles.suggestionsBox}>
+        <View
+          style={[
+            styles.suggestionsBox,
+            { backgroundColor: themeColors.surface, borderColor: themeColors.border },
+          ]}
+        >
           {suggestions.slice(0, 5).map((item) => (
             <Pressable
               key={item}
               onPress={() => handleSelectSuggestion(item)}
-              style={styles.suggestionRow}
+              style={[styles.suggestionRow, { borderBottomColor: themeColors.borderSubtle }]}
             >
-              <Ionicons name="search-outline" size={15} color={colors.textSecondary} />
-              <Text numberOfLines={1} style={[typography.body, styles.suggestionText]}>
+              <Ionicons name="search-outline" size={15} color={themeColors.textSecondary} />
+              <Text
+                numberOfLines={1}
+                style={[typography.body, styles.suggestionText, { color: themeColors.textPrimary }]}
+              >
                 {item}
               </Text>
-              <Ionicons name="arrow-up-outline" size={15} color={colors.textMuted} />
+              <Ionicons name="arrow-up-outline" size={15} color={themeColors.textMuted} />
             </Pressable>
           ))}
         </View>
@@ -432,7 +533,8 @@ export default function SearchScreen() {
         visible={Boolean(selectedTrack)}
         onClose={() => setSelectedTrack(null)}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </FadeOnFocus>
   );
 }
 
@@ -509,8 +611,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
   },
   tabPillActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
   },
   tabText: {
     color: colors.textSecondary,
@@ -622,24 +724,43 @@ const styles = StyleSheet.create({
     height: 78,
     borderRadius: radii.md,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },
   moodTilePressed: {
-    opacity: 0.88,
+    opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
-  moodGradient: {
+  moodGlassInner: {
     flex: 1,
-    padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    padding: spacing.sm + 2,
     justifyContent: 'space-between',
+  },
+  moodIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   moodLabel: {
     color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  langTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  langNative: {
+    fontSize: 12,
+    fontWeight: '600',
+    flexShrink: 1,
   },
 });

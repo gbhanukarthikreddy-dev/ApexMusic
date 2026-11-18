@@ -1,44 +1,45 @@
 import { TextStyle } from 'react-native';
 
-export const colors = {
-  // Deep matte charcoal-black canvas & elevated surfaces
-  background: '#0E0E12',
-  surface: '#16161D',
-  surfaceElevated: '#1C1C25',
-  surfaceHighlight: '#252531',
-  glassSurface: 'rgba(28, 28, 36, 0.92)',
-  glassBorder: 'rgba(255, 255, 255, 0.08)',
-  border: '#2A2A36',
-  borderSubtle: 'rgba(255, 255, 255, 0.06)',
+export const darkColors = {
+  // Apple-inspired deep obsidian canvas & frosted glass surfaces
+  background: '#070709',
+  surface: 'rgba(255, 255, 255, 0.05)',
+  surfaceElevated: 'rgba(255, 255, 255, 0.08)',
+  surfaceHighlight: 'rgba(255, 255, 255, 0.14)',
+  glassSurface: 'rgba(24, 24, 28, 0.68)',
+  glassBorder: 'rgba(255, 255, 255, 0.16)',
+  glassHighlight: 'rgba(255, 255, 255, 0.24)',
+  border: 'rgba(255, 255, 255, 0.12)',
+  borderSubtle: 'rgba(255, 255, 255, 0.08)',
 
-  // Reference-inspired Acid-Lime + Lavender-Violet palette
-  accent: '#C6E63B',
-  accentLight: '#D9F266',
-  accentDark: '#4A1D7A',
-  accentMuted: 'rgba(198, 230, 59, 0.14)',
-  accentGlow: 'rgba(198, 230, 59, 0.32)',
-  lavender: '#CFA7F8',
-  lavenderDark: '#4A1D7A',
-  secondaryAccent: '#EC4899',
+  // Apple Music crimson-coral + crisp monochrome glass accents
+  accent: '#FA2D48',
+  accentLight: '#FF5C72',
+  accentMuted: 'rgba(250, 45, 72, 0.18)',
+  accentGlow: 'rgba(250, 45, 72, 0.30)',
 
-  // Typography
-  textPrimary: '#F8FAFC',
-  textSecondary: '#9898A6',
-  textMuted: '#686878',
-  textInverse: '#0E0E12',
+  // Typography (Apple Dark Mode label hierarchy)
+  textPrimary: '#FFFFFF',
+  textSecondary: 'rgba(235, 235, 245, 0.68)',
+  textMuted: 'rgba(235, 235, 245, 0.42)',
+  textInverse: '#000000',
 
   // Semantic
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  errorMuted: 'rgba(239, 68, 68, 0.16)',
+  success: '#30D158',
+  warning: '#FF9F0A',
+  error: '#FF453A',
+  errorMuted: 'rgba(255, 69, 58, 0.18)',
 
   // Overlays & Skeletons
-  overlayDark: 'rgba(14, 14, 18, 0.85)',
-  overlayLight: 'rgba(255, 255, 255, 0.07)',
-  skeletonBase: '#17171F',
-  skeletonHighlight: '#242430',
-} as const;
+  overlayDark: 'rgba(7, 7, 9, 0.78)',
+  overlayLight: 'rgba(255, 255, 255, 0.08)',
+  skeletonBase: '#141418',
+  skeletonHighlight: '#202026',
+};
+
+export type ThemeColors = typeof darkColors;
+
+export const colors = darkColors;
 
 export const spacing = {
   xxs: 4,

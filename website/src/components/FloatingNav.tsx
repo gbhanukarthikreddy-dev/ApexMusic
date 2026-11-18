@@ -64,25 +64,18 @@ export function FloatingNav({ activeSection }: FloatingNavProps) {
 
       {/* Main Floating Pill */}
       <div className="flex items-center justify-between gap-2 rounded-full border border-line bg-black/70 p-1.5 backdrop-blur-xl shadow-2xl">
-        {/* Circular orange A badge */}
+        {/* Apex Music logo badge */}
         <a
           href="#home"
           onClick={() => setMenuOpen(false)}
           aria-label="Apex Music Home"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-apex transition-transform hover:scale-105 motion-reduce:transition-none"
+          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 transition-transform hover:scale-105 motion-reduce:transition-none"
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-4 w-4"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 4L20 19H16.6L12 10.2L7.4 19H4L12 4Z"
-              fill="#F2F2F0"
-            />
-            <rect x="10.8" y="14" width="2.4" height="5" rx="1.2" fill="#F2F2F0" />
-          </svg>
+          <img
+            src="/logo.png"
+            alt="Apex Music logo"
+            className="h-full w-full object-cover"
+          />
         </a>
 
         {/* Desktop / Tablet Inline Links */}

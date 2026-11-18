@@ -1,9 +1,16 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MiniPlayer } from '../../components/MiniPlayer';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { colors, layout, spacing } from '../../theme';
 import { triggerSelectionHaptic } from '../../utils/haptics';
 
@@ -19,12 +26,109 @@ const TAB_ICONS: Record<
 
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 
+const PILL_WIDTH = 56;
+const SPRING_CONFIG = { damping: 20, stiffness: 260, mass: 0.75 };
+
+type TabLayout = { x: number; width: number };
+
+function TabItem({
+  isFocused,
+  iconName,
+  activeColor,
+  inactiveColor,
+  onPress,
+  onLayout,
+}: {
+  isFocused: boolean;
+  iconName: keyof typeof Ionicons.glyphMap;
+  activeColor: string;
+  inactiveColor: string;
+  onPress: () => void;
+  onLayout: (e: LayoutChangeEvent) => void;
+}) {
+  const pressed = useSharedValue(false);
+
+  const iconAnimStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: withSpring(pressed.value ? 0.86 : isFocused ? 1.08 : 1, SPRING_CONFIG),
+      },
+    ],
+  }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onLayout={onLayout}
+      onPressIn={() => {
+        pressed.set(true);
+      }}
+      onPressOut={() => {
+        pressed.set(false);
+      }}
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      style={styles.tabTouch}
+    >
+      <Animated.View style={[styles.iconCircle, iconAnimStyle]}>
+        <Ionicons
+          name={iconName}
+          size={21}
+          color={isFocused ? activeColor : inactiveColor}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 function FloatingTabBar({ state, emitter, navigateToTab, insets }: TabBarProps) {
   const bottomPos = Math.max(14, insets.bottom + 6);
+  const { isDark, colors: themeColors, chromeBlurTint } = useAppTheme();
+  const [tabLayouts, setTabLayouts] = useState<Record<number, TabLayout>>({});
+  const indicatorX = useSharedValue(0);
+
+  const activeLayout = tabLayouts[state.index];
+
+  useEffect(() => {
+    if (!activeLayout) return;
+    const targetX = activeLayout.x + (activeLayout.width - PILL_WIDTH) / 2;
+    indicatorX.value = withSpring(targetX, SPRING_CONFIG);
+  }, [activeLayout, indicatorX]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: indicatorX.value }],
+    opacity: activeLayout ? 1 : 0,
+  }));
 
   return (
     <View style={[styles.pillWrapper, { bottom: bottomPos }]}>
-      <View style={styles.pillBar}>
+      <View style={[styles.pillBar, { borderColor: themeColors.glassBorder }]}>
+        <BlurView
+          intensity={75}
+          tint={chromeBlurTint}
+          blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          style={[
+            styles.pillGlassTint,
+            { backgroundColor: isDark ? 'rgba(24, 24, 28, 0.58)' : 'rgba(255, 255, 255, 0.68)' },
+          ]}
+          pointerEvents="none"
+        />
+
+        <Animated.View
+          style={[
+            styles.slidingGlassPill,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.10)',
+            },
+            indicatorStyle,
+          ]}
+          pointerEvents="none"
+        />
+
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const icons = TAB_ICONS[route.name] || {
@@ -45,22 +149,24 @@ function FloatingTabBar({ state, emitter, navigateToTab, insets }: TabBarProps) 
           };
 
           return (
-            <Pressable
+            <TabItem
               key={route.key}
+              isFocused={isFocused}
+              iconName={isFocused ? icons.active : icons.inactive}
+              activeColor={themeColors.textPrimary}
+              inactiveColor={themeColors.textSecondary}
               onPress={onPress}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              style={styles.tabTouch}
-            >
-              <View style={styles.iconCircle}>
-                {isFocused ? <View style={styles.activeCircleBg} /> : null}
-                <Ionicons
-                  name={isFocused ? icons.active : icons.inactive}
-                  size={21}
-                  color={isFocused ? colors.textInverse : colors.textSecondary}
-                />
-              </View>
-            </Pressable>
+              onLayout={(e) => {
+                const { x, width } = e.nativeEvent.layout;
+                setTabLayouts((prev) => {
+                  const existing = prev[index];
+                  if (existing && existing.x === x && existing.width === width) {
+                    return prev;
+                  }
+                  return { ...prev, [index]: { x, width } };
+                });
+              }}
+            />
           );
         })}
       </View>
@@ -70,11 +176,12 @@ function FloatingTabBar({ state, emitter, navigateToTab, insets }: TabBarProps) 
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useAppTheme();
   const tabPillBottom = Math.max(14, insets.bottom + 6);
   const miniPlayerOffset = tabPillBottom + layout.tabBarHeight + 10;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <Tabs
         tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
@@ -108,18 +215,32 @@ const styles = StyleSheet.create({
     height: layout.tabBarHeight,
     borderRadius: 32,
     overflow: 'hidden',
-    backgroundColor: colors.glassSurface,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.glassHighlight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: spacing.xs,
     shadowColor: '#000',
-    shadowOpacity: 0.55,
-    shadowRadius: 18,
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     elevation: 16,
+  },
+  pillGlassTint: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(24, 24, 28, 0.58)',
+  },
+  slidingGlassPill: {
+    position: 'absolute',
+    top: (layout.tabBarHeight - 44) / 2,
+    left: 0,
+    width: PILL_WIDTH,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.24)',
   },
   tabTouch: {
     flex: 1,
@@ -128,20 +249,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   iconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: PILL_WIDTH,
+    height: 44,
+    borderRadius: 22,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  activeCircleBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.accent,
   },
 });

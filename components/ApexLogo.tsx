@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { useAppTheme } from '../hooks/useAppTheme';
 import { colors, radii, spacing } from '../theme';
 
 const APEX_LOGO_SOURCE = require('../assets/logo.png');
@@ -16,6 +17,7 @@ export function ApexLogo({
   showTagline = false,
   iconOnly = false,
 }: ApexLogoProps) {
+  const { colors: themeColors } = useAppTheme();
   const boxSize = size === 'lg' ? 56 : size === 'sm' ? 36 : 42;
   const fontSize = size === 'lg' ? 25 : size === 'sm' ? 15 : 18;
   const radius = size === 'lg' ? radii.md : size === 'sm' ? radii.sm : 12;
@@ -29,6 +31,7 @@ export function ApexLogo({
             width: boxSize,
             height: boxSize,
             borderRadius: radius,
+            borderColor: themeColors.glassBorder,
           },
         ]}
       >
@@ -43,10 +46,18 @@ export function ApexLogo({
       {!iconOnly ? (
         <View>
           <View style={styles.wordmarkRow}>
-            <Text style={[styles.brandPrimary, { fontSize }]}>APEX</Text>
-            <Text style={[styles.brandSecondary, { fontSize }]}>MUSIC</Text>
+            <Text style={[styles.brandPrimary, { fontSize, color: themeColors.textPrimary }]}>
+              APEX
+            </Text>
+            <Text style={[styles.brandSecondary, { fontSize, color: themeColors.textSecondary }]}>
+              MUSIC
+            </Text>
           </View>
-          {showTagline ? <Text style={styles.tagline}>STREAM WITHOUT LIMITS</Text> : null}
+          {showTagline ? (
+            <Text style={[styles.tagline, { color: themeColors.textMuted }]}>
+              STREAM WITHOUT LIMITS
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -61,9 +72,9 @@ const styles = StyleSheet.create({
   },
   badge: {
     overflow: 'hidden',
-    backgroundColor: '#0F0F19',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.glassHighlight,
   },
   logoImage: {
     width: '100%',
@@ -82,7 +93,7 @@ const styles = StyleSheet.create({
   brandSecondary: {
     fontWeight: '400',
     letterSpacing: 0.8,
-    color: colors.lavender,
+    color: colors.textSecondary,
   },
   tagline: {
     fontSize: 10,

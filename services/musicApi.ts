@@ -31,6 +31,10 @@ function resolveDefaultBaseUrl(): string {
     }
   }
 
+  if (!__DEV__) {
+    return 'https://apexmusic-c5p1.onrender.com';
+  }
+
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:3001';
   }
@@ -72,7 +76,7 @@ export interface IMusicDataSource {
   healthCheck(): Promise<{ ok: boolean; service: string }>;
 }
 
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 55000;
 
 const memoryCache = new Map<string, { value: unknown; expiresAt: number }>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
@@ -91,7 +95,11 @@ function setCachedValue(key: string, value: unknown, ttlMs: number): void {
   memoryCache.set(key, { value, expiresAt: Date.now() + ttlMs });
 }
 
-async function requestJson<T>(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
+async function requestJson<T>(
+  path: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  retriesLeft = 1
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const url = `${getApiBaseUrl()}${path}`;
@@ -121,11 +129,26 @@ async function requestJson<T>(path: string, timeoutMs = DEFAULT_TIMEOUT_MS): Pro
     if (err instanceof MusicApiError) {
       throw err;
     }
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new MusicApiError('Request timed out. Check your backend connection.', undefined, true);
+    const msg = err instanceof Error ? err.message : '';
+    const isAbort =
+      (err instanceof Error && err.name === 'AbortError') ||
+      msg.toLowerCase().includes('canceled') ||
+      msg.toLowerCase().includes('aborted');
+
+    if (retriesLeft > 0 && (isAbort || msg.toLowerCase().includes('network'))) {
+      clearTimeout(timer);
+      return requestJson<T>(path, timeoutMs, retriesLeft - 1);
+    }
+
+    if (isAbort) {
+      throw new MusicApiError(
+        'Server is waking up or timed out. Please tap Try Again.',
+        undefined,
+        true
+      );
     }
     throw new MusicApiError(
-      err instanceof Error ? err.message : 'Unable to reach Apex Music backend.',
+      msg || 'Unable to reach Apex Music server.',
       undefined,
       true
     );
@@ -218,7 +241,7 @@ class HttpMusicDataSource implements IMusicDataSource {
       `stream:${videoId}:${quality}`,
       `/api/stream/${encodeURIComponent(videoId)}?${params.toString()}`,
       20 * 60 * 1000,
-      { timeoutMs: 20000 }
+      { timeoutMs: 45000 }
     );
   }
 

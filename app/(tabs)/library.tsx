@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Modal,
@@ -13,8 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FadeOnFocus } from '../../components/FadeOnFocus';
 import { TrackActionSheet } from '../../components/TrackActionSheet';
 import { TrackRow } from '../../components/TrackRow';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useLibraryStore } from '../../store/libraryStore';
 import { usePlayerStore } from '../../store/playerStore';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -33,6 +36,7 @@ const TABS: Array<{ key: LibraryTab; label: string }> = [
 export default function LibraryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useAppTheme();
   const playTrack = usePlayerStore((s) => s.playTrack);
   const playQueue = usePlayerStore((s) => s.playQueue);
   const hasMiniPlayer = usePlayerStore((s) => Boolean(s.currentTrack));
@@ -46,6 +50,7 @@ export default function LibraryScreen() {
   const deletePlaylist = useLibraryStore((s) => s.deletePlaylist);
   const clearHistory = useLibraryStore((s) => s.clearHistory);
   const toggleDownloadPlaceholder = useLibraryStore((s) => s.toggleDownloadPlaceholder);
+  const retryOfflineDownload = useLibraryStore((s) => s.retryOfflineDownload);
 
   const [activeTab, setActiveTab] = useState<LibraryTab>('liked');
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -65,15 +70,19 @@ export default function LibraryScreen() {
   const listPadding = { paddingBottom: insets.bottom + (hasMiniPlayer ? 168 : 98) };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <FadeOnFocus>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: themeColors.background }]}
+        edges={['top']}
+      >
       <View style={styles.header}>
-        <Text style={typography.h1}>Your Library</Text>
+        <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Your Library</Text>
         <Pressable
           onPress={() => setCreateVisible(true)}
-          style={styles.newBtn}
+          style={[styles.newBtn, { backgroundColor: themeColors.textPrimary }]}
         >
-          <Ionicons name="add" size={20} color={colors.textInverse} />
-          <Text style={styles.newBtnText}>New Playlist</Text>
+          <Ionicons name="add" size={20} color={themeColors.textInverse} />
+          <Text style={[styles.newBtnText, { color: themeColors.textInverse }]}>New Playlist</Text>
         </Pressable>
       </View>
 
@@ -84,9 +93,21 @@ export default function LibraryScreen() {
             <Pressable
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              style={[styles.tabPill, active && styles.tabPillActive]}
+              style={[
+                styles.tabPill,
+                {
+                  backgroundColor: active ? themeColors.textPrimary : themeColors.surface,
+                  borderColor: active ? themeColors.textPrimary : themeColors.borderSubtle,
+                },
+              ]}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: active ? themeColors.textInverse : themeColors.textSecondary },
+                  active && styles.tabTextActive,
+                ]}
+              >
                 {tab.label}
               </Text>
             </Pressable>
@@ -102,23 +123,31 @@ export default function LibraryScreen() {
           ListHeaderComponent={
             likedSongs.length > 0 ? (
               <View style={styles.actionHeader}>
-                <Text style={typography.caption}>
+                <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
                   {likedSongs.length} {likedSongs.length === 1 ? 'song' : 'songs'}
                 </Text>
                 <View style={styles.playBtns}>
                   <Pressable
                     onPress={() => playQueue(likedSongs, 0, false)}
-                    style={styles.primaryPill}
+                    style={[styles.primaryPill, { backgroundColor: themeColors.textPrimary }]}
                   >
-                    <Ionicons name="play" size={14} color={colors.textInverse} />
-                    <Text style={styles.pillText}>Play</Text>
+                    <Ionicons name="play" size={14} color={themeColors.textInverse} />
+                    <Text style={[styles.pillText, { color: themeColors.textInverse }]}>Play</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => playQueue(likedSongs, 0, true)}
-                    style={styles.secondaryPill}
+                    style={[
+                      styles.secondaryPill,
+                      {
+                        backgroundColor: themeColors.surface,
+                        borderColor: themeColors.border,
+                      },
+                    ]}
                   >
-                    <Ionicons name="shuffle" size={15} color={colors.accentLight} />
-                    <Text style={styles.secondaryPillText}>Shuffle</Text>
+                    <Ionicons name="shuffle" size={15} color={themeColors.textPrimary} />
+                    <Text style={[styles.secondaryPillText, { color: themeColors.textPrimary }]}>
+                      Shuffle
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -171,10 +200,10 @@ export default function LibraryScreen() {
                   </View>
                 )}
                 <View style={styles.playlistMeta}>
-                  <Text numberOfLines={1} style={typography.bodyMedium}>
+                  <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
                     {item.name}
                   </Text>
-                  <Text numberOfLines={1} style={typography.caption}>
+                  <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
                     {item.tracks.length} {item.tracks.length === 1 ? 'track' : 'tracks'}
                     {item.description ? ` • ${item.description}` : ''}
                   </Text>
@@ -217,7 +246,7 @@ export default function LibraryScreen() {
           ListHeaderComponent={
             history.length > 0 ? (
               <View style={styles.actionHeader}>
-                <Text style={typography.caption}>
+                <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
                   Recently played ({history.length})
                 </Text>
                 <Pressable onPress={clearHistory}>
@@ -257,11 +286,56 @@ export default function LibraryScreen() {
           keyExtractor={(item) => item.track.id}
           contentContainerStyle={listPadding}
           ListHeaderComponent={
-            <View style={styles.offlineBanner}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.accentLight} />
-              <Text style={styles.offlineText}>
-                Saved tracks are stored in your local library for quick access.
-              </Text>
+            <View>
+              <View style={styles.offlineBanner}>
+                <Ionicons name="cloud-done-outline" size={18} color={themeColors.textPrimary} />
+                <Text style={[styles.offlineText, { color: themeColors.textSecondary }]}>
+                  Downloaded tracks play offline without an internet connection.
+                </Text>
+              </View>
+              {downloads.length > 0 ? (
+                <View style={styles.actionHeader}>
+                  <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
+                    {downloads.filter((d) => d.status === 'downloaded').length} of {downloads.length} ready offline
+                  </Text>
+                  <View style={styles.playBtns}>
+                    <Pressable
+                      onPress={() =>
+                        playQueue(
+                          downloads.map((d) => d.track),
+                          0,
+                          false
+                        )
+                      }
+                      style={[styles.primaryPill, { backgroundColor: themeColors.textPrimary }]}
+                    >
+                      <Ionicons name="play" size={14} color={themeColors.textInverse} />
+                      <Text style={[styles.pillText, { color: themeColors.textInverse }]}>Play</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() =>
+                        playQueue(
+                          downloads.map((d) => d.track),
+                          0,
+                          true
+                        )
+                      }
+                      style={[
+                        styles.secondaryPill,
+                        {
+                          backgroundColor: themeColors.surface,
+                          borderColor: themeColors.border,
+                        },
+                      ]}
+                    >
+                      <Ionicons name="shuffle" size={15} color={themeColors.textPrimary} />
+                      <Text style={[styles.secondaryPillText, { color: themeColors.textPrimary }]}>
+                        Shuffle
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
             </View>
           }
           renderItem={({ item }) => (
@@ -280,11 +354,35 @@ export default function LibraryScreen() {
                 />
               </View>
               <Pressable
-                onPress={() => toggleDownloadPlaceholder(item.track)}
+                onPress={() => {
+                  if (item.status === 'error' || item.status === 'cached_metadata') {
+                    retryOfflineDownload(item.track);
+                  } else if (item.status === 'downloaded') {
+                    toggleDownloadPlaceholder(item.track);
+                  }
+                }}
                 style={styles.sizeBadge}
               >
-                <Ionicons name="cloud-done" size={14} color={colors.success} />
-                <Text style={styles.sizeText}>{item.estimatedSizeMb} MB</Text>
+                {item.status === 'downloading' ? (
+                  <>
+                    <ActivityIndicator size="small" color={themeColors.textPrimary} />
+                    <Text style={[styles.sizeText, { color: themeColors.textSecondary }]}>
+                      Saving
+                    </Text>
+                  </>
+                ) : item.status === 'downloaded' ? (
+                  <>
+                    <Ionicons name="cloud-done" size={14} color={colors.success} />
+                    <Text style={styles.sizeText}>{item.estimatedSizeMb} MB</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="cloud-download-outline" size={14} color={colors.accent} />
+                    <Text style={[styles.sizeText, { color: colors.accent }]}>
+                      {item.status === 'error' ? 'Retry' : 'Download'}
+                    </Text>
+                  </>
+                )}
               </Pressable>
             </View>
           )}
@@ -343,7 +441,8 @@ export default function LibraryScreen() {
         visible={Boolean(selectedTrack)}
         onClose={() => setSelectedTrack(null)}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </FadeOnFocus>
   );
 }
 
@@ -356,13 +455,16 @@ function EmptyLibrary({
   title: string;
   subtitle: string;
 }) {
+  const { colors: themeColors } = useAppTheme();
   return (
     <View style={styles.emptyWrap}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name={icon} size={30} color={colors.accentLight} />
+      <View style={[styles.emptyIcon, { backgroundColor: themeColors.accentMuted }]}>
+        <Ionicons name={icon} size={30} color={themeColors.accent} />
       </View>
-      <Text style={typography.h3}>{title}</Text>
-      <Text style={[typography.body, styles.emptySub]}>{subtitle}</Text>
+      <Text style={[typography.h3, { color: themeColors.textPrimary }]}>{title}</Text>
+      <Text style={[typography.body, styles.emptySub, { color: themeColors.textSecondary }]}>
+        {subtitle}
+      </Text>
     </View>
   );
 }
