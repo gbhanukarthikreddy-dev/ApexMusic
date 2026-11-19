@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Download } from 'lucide-react';
+import { APK_DOWNLOAD_URL } from '../lib/constants';
 
 interface IosComingSoonProps {
   onBack: () => void;
 }
 
 export function IosComingSoon({ onBack }: IosComingSoonProps) {
-  const prefersReduced = useReducedMotion();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -19,81 +18,84 @@ export function IosComingSoon({ onBack }: IosComingSoonProps) {
   };
 
   return (
-    <div className="min-h-screen bg-ink px-3 py-3 text-bone sm:px-6 sm:py-6">
-      <div className="frame relative mx-auto flex min-h-[calc(100vh-24px)] max-w-[1440px] flex-col justify-between overflow-hidden bg-ink px-6 py-7 sm:px-12 sm:py-10 lg:px-16 lg:py-12">
-        {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="h-2 w-2 rounded-full bg-apex" aria-hidden="true" />
-            <span className="label text-bone">APEX MUSIC · IOS</span>
+    <div className="flex min-h-screen flex-col justify-between bg-canvas text-ink-primary">
+      <header className="border-b border-rule px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 text-sm text-ink-secondary transition hover:text-ink-primary"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </button>
+
+          <div className="flex items-center gap-2">
+            <img
+              src="/logo.png"
+              alt="Apex Music"
+              className="h-7 w-7 rounded-lg ring-1 ring-white/15"
+            />
+            <span className="text-sm font-semibold">Apex Music</span>
           </div>
-
-          <button
-            type="button"
-            onClick={onBack}
-            className="pill-btn-outline px-4 py-2 text-[11px]"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Back to Home
-          </button>
         </div>
+      </header>
 
-        {/* Center Coming Soon Content */}
-        <motion.div
-          initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: prefersReduced ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
-          className="my-auto flex flex-col items-center py-14 text-center"
-        >
-          <span className="label text-apex">TESTFLIGHT & APP STORE</span>
+      <main className="mx-auto w-full max-w-xl px-4 py-20 sm:px-6">
+        <p className="font-mono text-xs text-ink-muted">IOS · TESTFLIGHT</p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">
+          Coming to iPhone{' '}
+          <span className="font-serif text-[1.12em] font-normal italic">
+            soon.
+          </span>
+        </h1>
 
-          <h1 className="mt-4 font-display text-[clamp(3.25rem,11vw,9.5rem)] leading-[0.86] tracking-[-0.04em] text-bone">
-            COMING SOON<span className="text-apex">.</span>
-          </h1>
+        <p className="mt-4 text-sm leading-relaxed text-ink-secondary sm:text-base">
+          We&apos;re finishing up the iOS build with native background audio and
+          lock-screen controls. Leave your email if you&apos;d like a TestFlight
+          invite when it opens.
+        </p>
 
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-bone/75 sm:text-lg">
-            Apex Music for iPhone and iPad is currently in final tuning—native
-            background audio, lock-screen Live Activities, and zero clutter.
-          </p>
-
-          {submitted ? (
-            <div className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-apex/50 bg-apex/15 px-6 py-3 font-mono text-xs uppercase tracking-label text-bone">
-              <Check className="h-4 w-4 text-apex" aria-hidden="true" />
-              You&apos;re on the iOS waitlist
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row"
-            >
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@domain.com"
-                aria-label="Email address for iOS early access"
-                className="flex-1 rounded-full border border-line bg-white/[0.03] px-5 py-3 font-mono text-xs text-bone placeholder:text-mute focus:border-apex focus:outline-none"
-              />
-              <button type="submit" className="pill-btn shrink-0">
-                Notify Me
-              </button>
-            </form>
-          )}
-        </motion.div>
-
-        {/* Bottom Meta */}
-        <div className="flex items-center justify-between">
-          <span className="label">EST. 2026</span>
-          <button
-            type="button"
-            onClick={onBack}
-            className="font-mono text-[11px] uppercase tracking-label text-mute transition-colors hover:text-bone"
+        {submitted ? (
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-2.5 text-sm text-emerald-300">
+            <Check className="h-4 w-4" aria-hidden="true" />
+            You&apos;re on the list.
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 flex flex-col gap-3 sm:flex-row"
           >
-            ANDROID APK AVAILABLE NOW →
-          </button>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              aria-label="Email address for iOS waitlist"
+              className="flex-1 rounded-full border border-rule-strong bg-panel px-5 py-3 text-sm text-ink-primary placeholder:text-ink-muted focus:border-white/40 focus:outline-none"
+            />
+            <button type="submit" className="btn-primary shrink-0">
+              Notify me
+            </button>
+          </form>
+        )}
+
+        <div className="mt-10 border-t border-rule pt-6">
+          <a
+            href={APK_DOWNLOAD_URL}
+            download="apexmusic.apk"
+            className="inline-flex items-center gap-2 text-xs text-ink-secondary transition hover:text-ink-primary"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            On Android? Download apexmusic.apk now
+          </a>
         </div>
-      </div>
+      </main>
+
+      <footer className="border-t border-rule px-4 py-6 text-center font-mono text-[11px] text-ink-muted sm:px-6">
+        Apex Music
+      </footer>
     </div>
   );
 }

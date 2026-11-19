@@ -6,12 +6,12 @@ import { FloatingNav } from './components/FloatingNav';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { IosComingSoon } from './components/IosComingSoon';
+import { LanguagesSection } from './components/LanguagesSection';
 import { PhoneShowcase } from './components/PhoneShowcase';
-import { Stats } from './components/Stats';
 import { useLenis } from './hooks/useLenis';
 import { useScrollSpy } from './hooks/useScrollSpy';
 
-const SECTIONS = ['home', 'features', 'app', 'download', 'faq'];
+const SECTIONS = ['home', 'features', 'app', 'languages', 'download', 'faq'];
 
 export default function App() {
   useLenis();
@@ -44,17 +44,17 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-ink text-bone">
+    <div className="min-h-screen bg-canvas text-ink-primary">
+      <FloatingNav activeSection={activeSection} />
       <main>
-        <Hero />
+        <Hero onOpenIos={openIosPage} />
         <Features />
         <PhoneShowcase />
-        <Stats />
+        <LanguagesSection />
         <DownloadCTA onOpenIos={openIosPage} />
         <FAQ />
       </main>
       <Footer />
-      <FloatingNav activeSection={activeSection} />
     </div>
   );
 }

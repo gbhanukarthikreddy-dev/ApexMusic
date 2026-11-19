@@ -5,22 +5,29 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: '#0A0A0A',
-        bone: '#F2F2F0',
-        mute: '#8A8A87',
-        line: 'rgba(255, 255, 255, 0.08)',
-        apex: '#FF4500',
+        canvas: '#09090B',
+        panel: '#111114',
+        'panel-hover': '#16161A',
+        'ink-primary': '#F4F4F2',
+        'ink-secondary': '#9A9AA3',
+        'ink-muted': '#63636B',
+        rule: 'rgba(255, 255, 255, 0.09)',
+        'rule-strong': 'rgba(255, 255, 255, 0.16)',
+        crimson: '#FA2D48',
       },
       fontFamily: {
-        display: ['"Archivo Black"', 'sans-serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
-      letterSpacing: {
-        label: '0.25em',
+      keyframes: {
+        eq: {
+          '0%, 100%': { transform: 'scaleY(0.28)' },
+          '50%': { transform: 'scaleY(1)' },
+        },
       },
-      borderRadius: {
-        frame: '48px',
+      animation: {
+        eq: 'eq 0.9s ease-in-out infinite',
       },
     },
   },

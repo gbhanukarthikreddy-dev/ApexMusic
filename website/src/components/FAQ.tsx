@@ -1,104 +1,81 @@
 import { useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Plus } from 'lucide-react';
-import { Reveal } from './Reveal';
+import { Minus, Plus } from 'lucide-react';
 
 const FAQS = [
   {
-    num: '01',
-    q: 'Is Apex Music free to stream?',
-    a: 'Yes. Apex Music lets you stream millions of tracks, explore trending releases, and build your personal library with zero interrupting audio ads.',
+    q: 'Is Apex Music actually free and ad-free?',
+    a: 'Yes. There are no banner ads, no audio ads between songs, and no account sign-up required.',
   },
   {
-    num: '02',
-    q: 'Does it support background playback and lock-screen controls?',
-    a: 'Yes. Audio continues playing smoothly when your screen is locked or when switching apps, complete with native lock-screen artwork and skip controls.',
+    q: 'Can I download whole playlists for offline playback?',
+    a: 'Yes. Open any playlist and tap download to save every track with live x/y progress. Downloaded Playlists and Downloaded Songs appear in separate sections in your library and work with zero internet.',
   },
   {
-    num: '03',
-    q: 'How does the swipe queue work?',
-    a: 'Swipe left on any song row to drop it straight into your Up Next queue, or open the queue manager to reorder and remove tracks anytime.',
+    q: 'Where do the synced lyrics come from?',
+    a: 'Time-synced LRC lyrics are fetched from LRCLIB. They auto-scroll as the track plays, and you can tap any line to jump straight to that part of the song.',
   },
   {
-    num: '04',
-    q: 'Can I choose my audio streaming quality?',
-    a: 'Yes. Switch between Data Saver, Balanced, and Studio High directly in Settings to match your connection or listening setup.',
+    q: 'Do lock-screen and notification controls work properly?',
+    a: 'Yes. Background playback runs natively on Android with a seek bar plus Previous, Play/Pause, and Next controls wired directly to your real playback queue.',
   },
   {
-    num: '05',
-    q: 'Where is my library stored?',
-    a: 'Your liked songs, custom playlists, listening history, and saved tracks are persisted locally on your device for instant access.',
+    q: 'What about iOS?',
+    a: 'The iOS build is still being finalized. You can leave your email on the iOS Waitlist page and we will let you know when TestFlight opens.',
   },
 ];
 
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const prefersReduced = useReducedMotion();
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
     <section
       id="faq"
-      className="mx-auto max-w-[1440px] px-6 py-20 sm:px-12 lg:px-16 lg:py-28"
       aria-labelledby="faq-heading"
+      className="border-b border-rule px-4 py-20 sm:px-6 lg:py-28"
     >
-      <Reveal>
-        <div className="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <span className="label text-apex">QUESTIONS</span>
-            <h2
-              id="faq-heading"
-              className="mt-3 font-display text-4xl uppercase tracking-tight text-bone sm:text-5xl"
-            >
-              FAQ.
-            </h2>
-          </div>
-          <span className="label">EVERYTHING YOU NEED TO KNOW</span>
+      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.38fr_0.62fr]">
+        <div>
+          <p className="font-mono text-xs text-ink-muted">FAQ</p>
+          <h2
+            id="faq-heading"
+            className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-ink-primary sm:text-4xl"
+          >
+            Common{' '}
+            <span className="font-serif text-[1.12em] font-normal italic">
+              questions.
+            </span>
+          </h2>
         </div>
-      </Reveal>
 
-      <div className="divide-y divide-line border-y border-line">
-        {FAQS.map((item, idx) => {
-          const isOpen = openIndex === idx;
-          return (
-            <div key={item.num} className="py-6">
-              <button
-                type="button"
-                onClick={() => setOpenIndex(isOpen ? null : idx)}
-                aria-expanded={isOpen}
-                className="flex w-full items-center justify-between gap-6 text-left"
-              >
-                <div className="flex items-baseline gap-5">
-                  <span className="font-mono text-xs text-apex">{item.num}</span>
-                  <span className="text-lg font-semibold text-bone sm:text-xl">
+        <div className="divide-y divide-rule border-y border-rule">
+          {FAQS.map((item, idx) => {
+            const isOpen = openIdx === idx;
+            return (
+              <div key={item.q}>
+                <button
+                  type="button"
+                  onClick={() => setOpenIdx(isOpen ? null : idx)}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                >
+                  <span className="text-base font-medium text-ink-primary">
                     {item.q}
                   </span>
-                </div>
-                <Plus
-                  className={`h-5 w-5 shrink-0 text-mute transition-transform duration-200 ${
-                    isOpen ? 'rotate-45 text-apex' : ''
-                  }`}
-                  aria-hidden="true"
-                />
-              </button>
-
-              <AnimatePresence initial={false}>
-                {isOpen ? (
-                  <motion.div
-                    initial={prefersReduced ? { opacity: 1 } : { height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                    transition={{ duration: prefersReduced ? 0 : 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="mt-4 max-w-2xl pl-9 text-sm leading-relaxed text-bone/75 sm:text-base">
-                      {item.a}
-                    </p>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+                  {isOpen ? (
+                    <Minus className="h-4 w-4 shrink-0 text-ink-secondary" aria-hidden="true" />
+                  ) : (
+                    <Plus className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+                  )}
+                </button>
+                {isOpen && (
+                  <p className="pb-5 pr-8 text-sm leading-relaxed text-ink-secondary">
+                    {item.a}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

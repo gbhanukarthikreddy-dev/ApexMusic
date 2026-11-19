@@ -1,66 +1,50 @@
-import { Github, Instagram, Mail, Twitter } from 'lucide-react';
+import { APK_DOWNLOAD_URL, GITHUB_REPO_URL } from '../lib/constants';
 
 export function Footer() {
   return (
-    <footer className="mx-auto max-w-[1440px] border-t border-line px-6 pb-32 pt-12 sm:px-12 lg:px-16">
-      <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-center">
-        <div>
-          <div className="font-display text-2xl tracking-tight text-bone">
-            APEX<span className="text-apex">.</span>
-          </div>
-          <div className="label mt-2">© 2026 APEX MUSIC</div>
+    <footer className="px-4 py-10 sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/logo.png"
+            alt="Apex Music"
+            className="h-7 w-7 rounded-lg ring-1 ring-white/15"
+          />
+          <span className="text-sm font-medium text-ink-primary">
+            Apex Music
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-6 font-mono text-[11px] uppercase tracking-label text-mute">
-          <a href="#home" className="transition-colors hover:text-bone hover:underline hover:decoration-apex hover:underline-offset-4">
-            HOME
+        <div className="flex flex-wrap items-center gap-6 text-xs text-ink-secondary">
+          <a href="#features" className="transition hover:text-ink-primary">
+            Features
           </a>
-          <a href="#features" className="transition-colors hover:text-bone hover:underline hover:decoration-apex hover:underline-offset-4">
-            FEATURES
+          <a href="#app" className="transition hover:text-ink-primary">
+            Preview
           </a>
-          <a href="#app" className="transition-colors hover:text-bone hover:underline hover:decoration-apex hover:underline-offset-4">
-            APP
+          <a href="#languages" className="transition hover:text-ink-primary">
+            Languages
           </a>
-          <a href="#download" className="transition-colors hover:text-bone hover:underline hover:decoration-apex hover:underline-offset-4">
-            DOWNLOAD
-          </a>
-          <a href="#faq" className="transition-colors hover:text-bone hover:underline hover:decoration-apex hover:underline-offset-4">
-            FAQ
-          </a>
-        </div>
-
-        <div className="flex items-center gap-4 text-mute">
           <a
-            href="https://github.com/gbhanukarthikreddy-dev/ApexMusic"
+            href={APK_DOWNLOAD_URL}
+            download="apexmusic.apk"
+            className="transition hover:text-ink-primary"
+          >
+            Download APK
+          </a>
+          <a
+            href={GITHUB_REPO_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="GitHub"
-            className="rounded-full border border-line p-2 transition-colors hover:border-apex hover:text-apex"
+            className="transition hover:text-ink-primary"
           >
-            <Github className="h-4 w-4" />
-          </a>
-          <a
-            href="#download"
-            aria-label="Twitter"
-            className="rounded-full border border-line p-2 transition-colors hover:border-apex hover:text-apex"
-          >
-            <Twitter className="h-4 w-4" />
-          </a>
-          <a
-            href="#download"
-            aria-label="Instagram"
-            className="rounded-full border border-line p-2 transition-colors hover:border-apex hover:text-apex"
-          >
-            <Instagram className="h-4 w-4" />
-          </a>
-          <a
-            href="mailto:hello@apexmusic.app"
-            aria-label="Email"
-            className="rounded-full border border-line p-2 transition-colors hover:border-apex hover:text-apex"
-          >
-            <Mail className="h-4 w-4" />
+            GitHub
           </a>
         </div>
+
+        <p className="font-mono text-[11px] text-ink-muted">
+          © {new Date().getFullYear()} Apex Music
+        </p>
       </div>
     </footer>
   );

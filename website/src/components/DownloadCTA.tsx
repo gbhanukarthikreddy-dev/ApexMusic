@@ -1,5 +1,5 @@
-import { ArrowUpRight, Smartphone } from 'lucide-react';
-import { Reveal } from './Reveal';
+import { ArrowUpRight, Download } from 'lucide-react';
+import { APK_DOWNLOAD_URL } from '../lib/constants';
 
 interface DownloadCTAProps {
   onOpenIos: () => void;
@@ -9,40 +9,103 @@ export function DownloadCTA({ onOpenIos }: DownloadCTAProps) {
   return (
     <section
       id="download"
-      className="mx-auto max-w-[1440px] px-3 py-20 sm:px-6 lg:py-28"
       aria-labelledby="download-heading"
+      className="border-b border-rule px-4 py-20 sm:px-6 lg:py-28"
     >
-      <Reveal>
-        <div className="frame relative overflow-hidden bg-ink px-6 py-16 sm:px-12 sm:py-24 lg:px-16">
-          <span className="label text-apex">AVAILABLE NOW</span>
-          <h2
-            id="download-heading"
-            className="mt-4 font-display text-[clamp(3.25rem,9vw,7.5rem)] leading-[0.88] tracking-[-0.03em] text-bone"
-          >
-            REACH THE APEX<span className="text-apex">.</span>
-          </h2>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-bone/75 sm:text-lg">
-            Install Apex Music on Android or join early access for iOS and carry
-            your entire sound universe in your pocket—fast, lightweight, and
-            ad-free.
-          </p>
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="Apex Music icon"
+                className="h-11 w-11 rounded-xl ring-1 ring-white/15"
+              />
+              <span className="font-mono text-xs text-ink-muted">
+                DIRECT RELEASE · GITHUB
+              </span>
+            </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <a
-              href="https://github.com/gbhanukarthikreddy-dev/ApexMusic/releases/latest/download/apexmusic.apk"
-              download="apexmusic.apk"
-              className="pill-btn"
+            <h2
+              id="download-heading"
+              className="mt-5 text-3xl font-semibold tracking-[-0.03em] text-ink-primary sm:text-5xl"
             >
-              <Smartphone className="h-4 w-4" aria-hidden="true" />
-              Download for Android (APK)
-            </a>
-            <button type="button" onClick={onOpenIos} className="pill-btn-outline">
-              Get on iOS
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+              Get Apex Music on{' '}
+              <span className="font-serif text-[1.1em] font-normal italic">
+                Android.
+              </span>
+            </h2>
+
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-ink-secondary sm:text-base">
+              Download the latest signed APK straight from GitHub Releases. No
+              Play Store account, no tracking SDKs, and no subscription paywall.
+            </p>
+
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <a
+                href={APK_DOWNLOAD_URL}
+                download="apexmusic.apk"
+                className="btn-primary"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Download apexmusic.apk
+              </a>
+              <button
+                type="button"
+                onClick={onOpenIos}
+                className="btn-secondary"
+              >
+                iOS Waitlist
+                <ArrowUpRight className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          {/* Plain, Honest 3-Step Install Note */}
+          <div className="rounded-2xl border border-rule bg-panel p-6">
+            <p className="font-mono text-xs text-ink-muted">
+              HOW TO INSTALL ON ANDROID
+            </p>
+            <ol className="mt-5 space-y-4 text-sm">
+              <li className="flex gap-4">
+                <span className="font-mono text-xs text-ink-muted">01</span>
+                <div>
+                  <p className="font-medium text-ink-primary">
+                    Download the APK
+                  </p>
+                  <p className="mt-0.5 text-ink-secondary">
+                    Tap the download button to grab the latest signed release.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-4 border-t border-rule pt-4">
+                <span className="font-mono text-xs text-ink-muted">02</span>
+                <div>
+                  <p className="font-medium text-ink-primary">
+                    Open apexmusic.apk
+                  </p>
+                  <p className="mt-0.5 text-ink-secondary">
+                    If Android prompts you, allow installs from your browser or
+                    files app.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-4 border-t border-rule pt-4">
+                <span className="font-mono text-xs text-ink-muted">03</span>
+                <div>
+                  <p className="font-medium text-ink-primary">
+                    Open and start listening
+                  </p>
+                  <p className="mt-0.5 text-ink-secondary">
+                    No login screen. Search any track or save a playlist offline
+                    right away.
+                  </p>
+                </div>
+              </li>
+            </ol>
           </div>
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }
