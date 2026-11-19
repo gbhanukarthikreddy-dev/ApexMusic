@@ -45,12 +45,14 @@ export default function LibraryScreen() {
   const playlists = useLibraryStore((s) => s.playlists);
   const history = useLibraryStore((s) => s.history);
   const downloads = useLibraryStore((s) => s.downloads);
+  const offlinePlaylists = useLibraryStore((s) => s.offlinePlaylists);
 
   const createPlaylist = useLibraryStore((s) => s.createPlaylist);
   const deletePlaylist = useLibraryStore((s) => s.deletePlaylist);
   const clearHistory = useLibraryStore((s) => s.clearHistory);
   const toggleDownloadPlaceholder = useLibraryStore((s) => s.toggleDownloadPlaceholder);
   const retryOfflineDownload = useLibraryStore((s) => s.retryOfflineDownload);
+  const removeOfflinePlaylist = useLibraryStore((s) => s.removeOfflinePlaylist);
 
   const [activeTab, setActiveTab] = useState<LibraryTab>('liked');
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -75,251 +77,67 @@ export default function LibraryScreen() {
         style={[styles.safeArea, { backgroundColor: themeColors.background }]}
         edges={['top']}
       >
-      <View style={styles.header}>
-        <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Your Library</Text>
-        <Pressable
-          onPress={() => setCreateVisible(true)}
-          style={[styles.newBtn, { backgroundColor: themeColors.textPrimary }]}
-        >
-          <Ionicons name="add" size={20} color={themeColors.textInverse} />
-          <Text style={[styles.newBtnText, { color: themeColors.textInverse }]}>New Playlist</Text>
-        </Pressable>
-      </View>
+        <View style={styles.header}>
+          <Text style={[typography.h1, { color: themeColors.textPrimary }]}>Your Library</Text>
+          <Pressable
+            onPress={() => setCreateVisible(true)}
+            style={[styles.newBtn, { backgroundColor: themeColors.textPrimary }]}
+          >
+            <Ionicons name="add" size={20} color={themeColors.textInverse} />
+            <Text style={[styles.newBtnText, { color: themeColors.textInverse }]}>New Playlist</Text>
+          </Pressable>
+        </View>
 
-      <View style={styles.tabsRow}>
-        {TABS.map((tab) => {
-          const active = activeTab === tab.key;
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              style={[
-                styles.tabPill,
-                {
-                  backgroundColor: active ? themeColors.textPrimary : themeColors.surface,
-                  borderColor: active ? themeColors.textPrimary : themeColors.borderSubtle,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  { color: active ? themeColors.textInverse : themeColors.textSecondary },
-                  active && styles.tabTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {activeTab === 'liked' ? (
-        <FlatList
-          data={likedSongs}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={listPadding}
-          ListHeaderComponent={
-            likedSongs.length > 0 ? (
-              <View style={styles.actionHeader}>
-                <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
-                  {likedSongs.length} {likedSongs.length === 1 ? 'song' : 'songs'}
-                </Text>
-                <View style={styles.playBtns}>
-                  <Pressable
-                    onPress={() => playQueue(likedSongs, 0, false)}
-                    style={[styles.primaryPill, { backgroundColor: themeColors.textPrimary }]}
-                  >
-                    <Ionicons name="play" size={14} color={themeColors.textInverse} />
-                    <Text style={[styles.pillText, { color: themeColors.textInverse }]}>Play</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => playQueue(likedSongs, 0, true)}
-                    style={[
-                      styles.secondaryPill,
-                      {
-                        backgroundColor: themeColors.surface,
-                        borderColor: themeColors.border,
-                      },
-                    ]}
-                  >
-                    <Ionicons name="shuffle" size={15} color={themeColors.textPrimary} />
-                    <Text style={[styles.secondaryPillText, { color: themeColors.textPrimary }]}>
-                      Shuffle
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : undefined
-          }
-          renderItem={({ item }) => (
-            <TrackRow
-              track={item}
-              onPress={() => playTrack(item, likedSongs)}
-              onMorePress={setSelectedTrack}
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyLibrary
-              icon="heart-outline"
-              title="No liked songs yet"
-              subtitle="Tap the heart icon on any track to save it here."
-            />
-          }
-        />
-      ) : null}
-
-      {activeTab === 'playlists' ? (
-        <FlatList
-          data={playlists}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={listPadding}
-          renderItem={({ item }) => {
-            const cover = item.tracks[0]?.artwork;
+        <View style={styles.tabsRow}>
+          {TABS.map((tab) => {
+            const active = activeTab === tab.key;
             return (
               <Pressable
-                onPress={() => router.push(`/playlist/${item.id}`)}
-                style={({ pressed }) => [styles.playlistRow, pressed && styles.rowPressed]}
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={[
+                  styles.tabPill,
+                  {
+                    backgroundColor: active ? themeColors.textPrimary : themeColors.surface,
+                    borderColor: active ? themeColors.textPrimary : themeColors.borderSubtle,
+                  },
+                ]}
               >
-                {cover ? (
-                  <Image
-                    source={{ uri: getHighResArtwork(cover) }}
-                    style={styles.playlistArt}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : (
-                  <View style={[styles.playlistArt, styles.playlistFallback]}>
-                    <Image
-                      source={require('../../assets/logo.png')}
-                      style={styles.playlistFallbackLogo}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  </View>
-                )}
-                <View style={styles.playlistMeta}>
-                  <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
-                    {item.name}
-                  </Text>
-                  <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
-                    {item.tracks.length} {item.tracks.length === 1 ? 'track' : 'tracks'}
-                    {item.description ? ` • ${item.description}` : ''}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Alert.alert('Delete Playlist', `Delete "${item.name}"?`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: () => deletePlaylist(item.id),
-                      },
-                    ]);
-                  }}
-                  hitSlop={10}
-                  style={styles.deleteBtn}
+                <Text
+                  style={[
+                    styles.tabText,
+                    { color: active ? themeColors.textInverse : themeColors.textSecondary },
+                    active && styles.tabTextActive,
+                  ]}
                 >
-                  <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                </Pressable>
+                  {tab.label}
+                </Text>
               </Pressable>
             );
-          }}
-          ListEmptyComponent={
-            <EmptyLibrary
-              icon="albums-outline"
-              title="No playlists created"
-              subtitle="Create custom playlists to organize your favorite tracks."
-            />
-          }
-        />
-      ) : null}
+          })}
+        </View>
 
-      {activeTab === 'history' ? (
-        <FlatList
-          data={history}
-          keyExtractor={(item) => `${item.track.id}_${item.playedAt}`}
-          contentContainerStyle={listPadding}
-          ListHeaderComponent={
-            history.length > 0 ? (
-              <View style={styles.actionHeader}>
-                <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
-                  Recently played ({history.length})
-                </Text>
-                <Pressable onPress={clearHistory}>
-                  <Text style={styles.clearLink}>Clear History</Text>
-                </Pressable>
-              </View>
-            ) : undefined
-          }
-          renderItem={({ item }) => (
-            <View>
-              <TrackRow
-                track={item.track}
-                onPress={() =>
-                  playTrack(
-                    item.track,
-                    history.map((h) => h.track)
-                  )
-                }
-                onMorePress={setSelectedTrack}
-              />
-              <Text style={styles.historyTime}>{formatRelativeTime(item.playedAt)}</Text>
-            </View>
-          )}
-          ListEmptyComponent={
-            <EmptyLibrary
-              icon="time-outline"
-              title="No listening history"
-              subtitle="Tracks you play will automatically appear here."
-            />
-          }
-        />
-      ) : null}
-
-      {activeTab === 'downloads' ? (
-        <FlatList
-          data={downloads}
-          keyExtractor={(item) => item.track.id}
-          contentContainerStyle={listPadding}
-          ListHeaderComponent={
-            <View>
-              <View style={styles.offlineBanner}>
-                <Ionicons name="cloud-done-outline" size={18} color={themeColors.textPrimary} />
-                <Text style={[styles.offlineText, { color: themeColors.textSecondary }]}>
-                  Downloaded tracks play offline without an internet connection.
-                </Text>
-              </View>
-              {downloads.length > 0 ? (
+        {activeTab === 'liked' ? (
+          <FlatList
+            data={likedSongs}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={listPadding}
+            ListHeaderComponent={
+              likedSongs.length > 0 ? (
                 <View style={styles.actionHeader}>
                   <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
-                    {downloads.filter((d) => d.status === 'downloaded').length} of {downloads.length} ready offline
+                    {likedSongs.length} {likedSongs.length === 1 ? 'song' : 'songs'}
                   </Text>
                   <View style={styles.playBtns}>
                     <Pressable
-                      onPress={() =>
-                        playQueue(
-                          downloads.map((d) => d.track),
-                          0,
-                          false
-                        )
-                      }
+                      onPress={() => playQueue(likedSongs, 0, false)}
                       style={[styles.primaryPill, { backgroundColor: themeColors.textPrimary }]}
                     >
                       <Ionicons name="play" size={14} color={themeColors.textInverse} />
                       <Text style={[styles.pillText, { color: themeColors.textInverse }]}>Play</Text>
                     </Pressable>
                     <Pressable
-                      onPress={() =>
-                        playQueue(
-                          downloads.map((d) => d.track),
-                          0,
-                          true
-                        )
-                      }
+                      onPress={() => playQueue(likedSongs, 0, true)}
                       style={[
                         styles.secondaryPill,
                         {
@@ -335,112 +153,378 @@ export default function LibraryScreen() {
                     </Pressable>
                   </View>
                 </View>
-              ) : null}
-            </View>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.downloadRow}>
-              <View style={styles.downloadTrackWrap}>
+              ) : undefined
+            }
+            renderItem={({ item }) => (
+              <TrackRow
+                track={item}
+                onPress={() => playTrack(item, likedSongs)}
+                onMorePress={setSelectedTrack}
+              />
+            )}
+            ListEmptyComponent={
+              <EmptyLibrary
+                icon="heart-outline"
+                title="No liked songs yet"
+                subtitle="Tap the heart icon on any track to save it here."
+              />
+            }
+          />
+        ) : null}
+
+        {activeTab === 'playlists' ? (
+          <FlatList
+            data={playlists}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={listPadding}
+            renderItem={({ item }) => {
+              const cover = item.tracks[0]?.artwork;
+              return (
+                <Pressable
+                  onPress={() => router.push(`/playlist/${item.id}`)}
+                  style={({ pressed }) => [styles.playlistRow, pressed && styles.rowPressed]}
+                >
+                  {cover ? (
+                    <Image
+                      source={{ uri: getHighResArtwork(cover) }}
+                      style={styles.playlistArt}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
+                  ) : (
+                    <View style={[styles.playlistArt, styles.playlistFallback]}>
+                      <Image
+                        source={require('../../assets/logo.png')}
+                        style={styles.playlistFallbackLogo}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                    </View>
+                  )}
+                  <View style={styles.playlistMeta}>
+                    <Text numberOfLines={1} style={[typography.bodyMedium, { color: themeColors.textPrimary }]}>
+                      {item.name}
+                    </Text>
+                    <Text numberOfLines={1} style={[typography.caption, { color: themeColors.textSecondary }]}>
+                      {item.tracks.length} {item.tracks.length === 1 ? 'track' : 'tracks'}
+                      {item.description ? ` • ${item.description}` : ''}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Alert.alert('Delete Playlist', `Delete "${item.name}"?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => deletePlaylist(item.id),
+                        },
+                      ]);
+                    }}
+                    hitSlop={10}
+                    style={styles.deleteBtn}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              <EmptyLibrary
+                icon="albums-outline"
+                title="No playlists created"
+                subtitle="Create custom playlists to organize your favorite tracks."
+              />
+            }
+          />
+        ) : null}
+
+        {activeTab === 'history' ? (
+          <FlatList
+            data={history}
+            keyExtractor={(item) => `${item.track.id}_${item.playedAt}`}
+            contentContainerStyle={listPadding}
+            ListHeaderComponent={
+              history.length > 0 ? (
+                <View style={styles.actionHeader}>
+                  <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
+                    Recently played ({history.length})
+                  </Text>
+                  <Pressable onPress={clearHistory}>
+                    <Text style={styles.clearLink}>Clear History</Text>
+                  </Pressable>
+                </View>
+              ) : undefined
+            }
+            renderItem={({ item }) => (
+              <View>
                 <TrackRow
                   track={item.track}
                   onPress={() =>
                     playTrack(
                       item.track,
-                      downloads.map((d) => d.track)
+                      history.map((h) => h.track)
                     )
                   }
                   onMorePress={setSelectedTrack}
-                  showLike={false}
                 />
+                <Text style={styles.historyTime}>{formatRelativeTime(item.playedAt)}</Text>
               </View>
-              <Pressable
-                onPress={() => {
-                  if (item.status === 'error' || item.status === 'cached_metadata') {
-                    retryOfflineDownload(item.track);
-                  } else if (item.status === 'downloaded') {
-                    toggleDownloadPlaceholder(item.track);
-                  }
-                }}
-                style={styles.sizeBadge}
-              >
-                {item.status === 'downloading' ? (
-                  <>
-                    <ActivityIndicator size="small" color={themeColors.textPrimary} />
-                    <Text style={[styles.sizeText, { color: themeColors.textSecondary }]}>
-                      Saving
-                    </Text>
-                  </>
-                ) : item.status === 'downloaded' ? (
-                  <>
-                    <Ionicons name="cloud-done" size={14} color={colors.success} />
-                    <Text style={styles.sizeText}>{item.estimatedSizeMb} MB</Text>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="cloud-download-outline" size={14} color={colors.accent} />
-                    <Text style={[styles.sizeText, { color: colors.accent }]}>
-                      {item.status === 'error' ? 'Retry' : 'Download'}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          )}
-          ListEmptyComponent={
-            <EmptyLibrary
-              icon="cloud-download-outline"
-              title="No offline tracks"
-              subtitle='Use the "..." menu on any song and tap "Save to Offline List".'
-            />
-          }
-        />
-      ) : null}
+            )}
+            ListEmptyComponent={
+              <EmptyLibrary
+                icon="time-outline"
+                title="No listening history"
+                subtitle="Tracks you play will automatically appear here."
+              />
+            }
+          />
+        ) : null}
 
-      {/* Create Playlist Modal */}
-      <Modal
-        visible={createVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCreateVisible(false)}
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setCreateVisible(false)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={typography.h3}>Create Playlist</Text>
-            <TextInput
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Playlist name"
-              placeholderTextColor={colors.textMuted}
-              style={styles.modalInput}
-              autoFocus
-            />
-            <TextInput
-              value={newDesc}
-              onChangeText={setNewDesc}
-              placeholder="Description (optional)"
-              placeholderTextColor={colors.textMuted}
-              style={styles.modalInput}
-            />
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setCreateVisible(false)}
-                style={styles.modalCancel}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable onPress={handleCreatePlaylist} style={styles.modalCreate}>
-                <Text style={styles.modalCreateText}>Create</Text>
-              </Pressable>
-            </View>
+        {activeTab === 'downloads' ? (
+          <FlatList
+            data={downloads}
+            keyExtractor={(item) => item.track.id}
+            contentContainerStyle={listPadding}
+            ListHeaderComponent={
+              <View>
+                <View style={styles.offlineBanner}>
+                  <Ionicons name="cloud-done-outline" size={18} color={themeColors.textPrimary} />
+                  <Text style={[styles.offlineText, { color: themeColors.textSecondary }]}>
+                    Downloaded playlists and songs play offline without internet.
+                  </Text>
+                </View>
+
+                {/* Section 1: Downloaded Playlists */}
+                {offlinePlaylists.length > 0 ? (
+                  <View style={styles.offlineSection}>
+                    <Text style={[styles.offlineSectionTitle, { color: themeColors.textMuted }]}>
+                      DOWNLOADED PLAYLISTS ({offlinePlaylists.length})
+                    </Text>
+                    {offlinePlaylists.map((pl) => {
+                      const readyCount = pl.tracks.filter((t) =>
+                        downloads.some((d) => d.track.id === t.id && d.status === 'downloaded')
+                      ).length;
+                      const cover = pl.artwork || pl.tracks[0]?.artwork;
+                      return (
+                        <Pressable
+                          key={pl.id}
+                          onPress={() => router.push(`/playlist/${pl.id}`)}
+                          style={({ pressed }) => [
+                            styles.playlistRow,
+                            pressed && styles.rowPressed,
+                          ]}
+                        >
+                          {cover ? (
+                            <Image
+                              source={{ uri: getHighResArtwork(cover) }}
+                              style={styles.playlistArt}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                            />
+                          ) : (
+                            <View style={[styles.playlistArt, styles.playlistFallback]}>
+                              <Image
+                                source={require('../../assets/logo.png')}
+                                style={styles.playlistFallbackLogo}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                              />
+                            </View>
+                          )}
+                          <View style={styles.playlistMeta}>
+                            <Text
+                              numberOfLines={1}
+                              style={[typography.bodyMedium, { color: themeColors.textPrimary }]}
+                            >
+                              {pl.title}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={[typography.caption, { color: themeColors.textSecondary }]}
+                            >
+                              {readyCount}/{pl.tracks.length} tracks offline
+                            </Text>
+                          </View>
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              removeOfflinePlaylist(pl.id);
+                            }}
+                            hitSlop={10}
+                            style={styles.deleteBtn}
+                          >
+                            <Ionicons name="trash-outline" size={18} color={themeColors.textMuted} />
+                          </Pressable>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+
+                {/* Section 2: Downloaded Songs */}
+                {downloads.length > 0 ? (
+                  <View>
+                    <Text
+                      style={[
+                        styles.offlineSectionTitle,
+                        styles.songsSectionTitle,
+                        { color: themeColors.textMuted },
+                      ]}
+                    >
+                      DOWNLOADED SONGS ({downloads.length})
+                    </Text>
+                    <View style={styles.actionHeader}>
+                      <Text style={[typography.caption, { color: themeColors.textSecondary }]}>
+                        {downloads.filter((d) => d.status === 'downloaded').length} of {downloads.length} ready offline
+                      </Text>
+                      <View style={styles.playBtns}>
+                        <Pressable
+                          onPress={() =>
+                            playQueue(
+                              downloads.map((d) => d.track),
+                              0,
+                              false
+                            )
+                          }
+                          style={[styles.primaryPill, { backgroundColor: themeColors.textPrimary }]}
+                        >
+                          <Ionicons name="play" size={14} color={themeColors.textInverse} />
+                          <Text style={[styles.pillText, { color: themeColors.textInverse }]}>Play</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() =>
+                            playQueue(
+                              downloads.map((d) => d.track),
+                              0,
+                              true
+                            )
+                          }
+                          style={[
+                            styles.secondaryPill,
+                            {
+                              backgroundColor: themeColors.surface,
+                              borderColor: themeColors.border,
+                            },
+                          ]}
+                        >
+                          <Ionicons name="shuffle" size={15} color={themeColors.textPrimary} />
+                          <Text style={[styles.secondaryPillText, { color: themeColors.textPrimary }]}>
+                            Shuffle
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.downloadRow}>
+                <View style={styles.downloadTrackWrap}>
+                  <TrackRow
+                    track={item.track}
+                    onPress={() =>
+                      playTrack(
+                        item.track,
+                        downloads.map((d) => d.track)
+                      )
+                    }
+                    onMorePress={setSelectedTrack}
+                    showLike={false}
+                  />
+                </View>
+                <Pressable
+                  onPress={() => {
+                    if (item.status === 'error' || item.status === 'cached_metadata') {
+                      retryOfflineDownload(item.track);
+                    } else if (item.status === 'downloaded') {
+                      toggleDownloadPlaceholder(item.track);
+                    }
+                  }}
+                  style={styles.sizeBadge}
+                >
+                  {item.status === 'downloading' ? (
+                    <>
+                      <ActivityIndicator size="small" color={themeColors.textPrimary} />
+                      <Text style={[styles.sizeText, { color: themeColors.textSecondary }]}>
+                        Saving
+                      </Text>
+                    </>
+                  ) : item.status === 'downloaded' ? (
+                    <>
+                      <Ionicons name="cloud-done" size={14} color={colors.success} />
+                      <Text style={styles.sizeText}>{item.estimatedSizeMb} MB</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="cloud-download-outline" size={14} color={colors.accent} />
+                      <Text style={[styles.sizeText, { color: colors.accent }]}>
+                        {item.status === 'error' ? 'Retry' : 'Download'}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            )}
+            ListEmptyComponent={
+              offlinePlaylists.length === 0 ? (
+                <EmptyLibrary
+                  icon="cloud-download-outline"
+                  title="No offline tracks"
+                  subtitle='Use the "..." menu on any song or tap Download on a playlist.'
+                />
+              ) : undefined
+            }
+          />
+        ) : null}
+
+        {/* Create Playlist Modal */}
+        <Modal
+          visible={createVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setCreateVisible(false)}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setCreateVisible(false)}>
+            <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+              <Text style={typography.h3}>Create Playlist</Text>
+              <TextInput
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Playlist name"
+                placeholderTextColor={colors.textMuted}
+                style={styles.modalInput}
+                autoFocus
+              />
+              <TextInput
+                value={newDesc}
+                onChangeText={setNewDesc}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textMuted}
+                style={styles.modalInput}
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={() => setCreateVisible(false)}
+                  style={styles.modalCancel}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={handleCreatePlaylist} style={styles.modalCreate}>
+                  <Text style={styles.modalCreateText}>Create</Text>
+                </Pressable>
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
 
-      <TrackActionSheet
-        track={selectedTrack}
-        visible={Boolean(selectedTrack)}
-        onClose={() => setSelectedTrack(null)}
-      />
+        <TrackActionSheet
+          track={selectedTrack}
+          visible={Boolean(selectedTrack)}
+          onClose={() => setSelectedTrack(null)}
+        />
       </SafeAreaView>
     </FadeOnFocus>
   );
@@ -715,5 +799,17 @@ const styles = StyleSheet.create({
   modalCreateText: {
     color: colors.textInverse,
     fontWeight: '700',
+  },
+  offlineSection: {
+    marginBottom: spacing.md,
+  },
+  offlineSectionTitle: {
+    ...typography.micro,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
+  },
+  songsSectionTitle: {
+    paddingTop: spacing.sm,
   },
 });

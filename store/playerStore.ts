@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { audioService } from '../services/audioService';
-import { musicApi } from '../services/musicApi';
+import { buildAudioStreamUrl, musicApi } from '../services/musicApi';
 import { RepeatMode, Track } from '../types/music';
 import { arrayMove, shuffleArray } from '../utils/format';
 import { useLibraryStore } from './libraryStore';
@@ -20,6 +20,7 @@ interface PlayerState {
   streamError: string | null;
   streamUrl: string | null;
   activeRequestId: number;
+  lastSeekAt: number;
 
   playTrack: (track: Track, newQueue?: Track[]) => Promise<void>;
   playQueue: (tracks: Track[], startIndex?: number, shuffleStart?: boolean) => Promise<void>;
@@ -39,12 +40,19 @@ interface PlayerState {
 
   retryCurrentTrack: () => Promise<void>;
   handleTrackFinished: () => Promise<void>;
+  syncExternalTrackIndex: (index: number) => void;
   syncPlaybackStatus: (patch: {
     isPlaying: boolean;
     isBuffering: boolean;
     position: number;
     duration: number;
   }) => void;
+}
+
+function getPlayableTrackUrl(track: Track): string {
+  const libraryState = useLibraryStore.getState();
+  const offlineUri = libraryState.getOfflineUri(track.id);
+  return offlineUri ?? buildAudioStreamUrl(track.id, libraryState.audioQuality);
 }
 
 async function loadTrackByIndex(
@@ -72,17 +80,13 @@ async function loadTrackByIndex(
 
   try {
     const libraryState = useLibraryStore.getState();
-    const offlineUri = libraryState.getOfflineUri(track.id);
-    const quality = libraryState.audioQuality;
-    const playableUrl = offlineUri ?? (await musicApi.getStreamUrl(track.id, quality)).url;
+    const playableUrl = getPlayableTrackUrl(track);
+    const repeatMode = get().repeatMode;
+    audioService.setLoopMode(repeatMode === 'one' ? 'single' : repeatMode === 'all' ? 'all' : 'none');
 
-    // Ignore stale request if user already skipped to another track
+    await audioService.loadQueueAndPlay(queue, index, getPlayableTrackUrl);
     if (get().activeRequestId !== requestId) return;
 
-    await audioService.loadAndPlay(playableUrl, track);
-    if (get().activeRequestId !== requestId) return;
-
-    audioService.setLoop(get().repeatMode === 'one');
     set({
       streamUrl: playableUrl,
       isLoadingStream: false,
@@ -90,10 +94,10 @@ async function loadTrackByIndex(
       streamError: null,
     });
 
-    // Pre-warm the next track in the queue so skipping is instant
+    // Pre-warm the next track's stream metadata on backend
     const nextTrack = queue[index + 1];
     if (nextTrack && !libraryState.getOfflineUri(nextTrack.id)) {
-      musicApi.prefetchStream(nextTrack.id, quality);
+      musicApi.prefetchStream(nextTrack.id, libraryState.audioQuality);
     }
   } catch (err) {
     if (get().activeRequestId !== requestId) return;
@@ -121,6 +125,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   streamError: null,
   streamUrl: null,
   activeRequestId: 0,
+  lastSeekAt: 0,
 
   playTrack: async (track, newQueue) => {
     const baseQueue = newQueue && newQueue.length > 0 ? newQueue : [track];
@@ -237,8 +242,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   seekTo: async (seconds) => {
-    set({ position: Math.max(0, seconds) });
-    await audioService.seekTo(seconds);
+    const clamped = Math.max(0, seconds);
+    set({ position: clamped, lastSeekAt: Date.now() });
+    await audioService.seekTo(clamped);
   },
 
   toggleShuffle: () => {
@@ -276,7 +282,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const order: RepeatMode[] = ['off', 'all', 'one'];
     const current = get().repeatMode;
     const next = order[(order.indexOf(current) + 1) % order.length];
-    audioService.setLoop(next === 'one');
+    audioService.setLoopMode(next === 'one' ? 'single' : next === 'all' ? 'all' : 'none');
     set({ repeatMode: next });
   },
 
@@ -286,8 +292,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       void get().playTrack(track);
       return;
     }
+    const nextQueue = [...queue, track];
+    audioService.appendToPlaylist(getPlayableTrackUrl(track), nextQueue);
     set((state) => ({
-      queue: [...state.queue, track],
+      queue: nextQueue,
       originalQueue: [...state.originalQueue, track],
     }));
   },
@@ -301,6 +309,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const insertAt = currentIndex + 1;
     const nextQueue = [...queue];
     nextQueue.splice(insertAt, 0, track);
+    audioService.insertIntoPlaylist(getPlayableTrackUrl(track), insertAt, nextQueue);
     set((state) => ({
       queue: nextQueue,
       originalQueue: [...state.originalQueue, track],
@@ -329,6 +338,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       nextCurrentIndex = currentIndex + 1;
     }
 
+    audioService.invalidateQueueSignature();
     set({
       queue: updated,
       currentIndex: nextCurrentIndex,
@@ -362,6 +372,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       void loadTrackByIndex(nextIndex, updated, activeRequestId + 1, set, get);
     } else {
       const nextCurrentIndex = index < currentIndex ? currentIndex - 1 : currentIndex;
+      audioService.removeFromPlaylist(index, updated);
       set({
         queue: updated,
         currentIndex: nextCurrentIndex,
@@ -372,6 +383,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   clearQueue: () => {
     const { currentTrack } = get();
     if (!currentTrack) return;
+    audioService.invalidateQueueSignature();
     set({
       queue: [currentTrack],
       originalQueue: [currentTrack],
@@ -396,12 +408,35 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     await get().playNext(true);
   },
 
+  syncExternalTrackIndex: (index) => {
+    const { queue, currentIndex } = get();
+    if (index === currentIndex) return;
+    const track = queue[index];
+    if (!track) return;
+
+    useLibraryStore.getState().recordPlay(track);
+    audioService.updateLockScreenMetadata(track);
+
+    set({
+      currentIndex: index,
+      currentTrack: track,
+      streamUrl: getPlayableTrackUrl(track),
+      position: 0,
+      duration: track.duration || 0,
+      isLoadingStream: false,
+      streamError: null,
+    });
+  },
+
   syncPlaybackStatus: (patch) => {
-    set((state) => ({
-      isPlaying: state.isLoadingStream ? state.isPlaying : patch.isPlaying,
-      isBuffering: patch.isBuffering,
-      position: patch.position,
-      duration: patch.duration > 0 ? patch.duration : state.duration,
-    }));
+    set((state) => {
+      const recentlySeeked = Date.now() - state.lastSeekAt < 500;
+      return {
+        isPlaying: state.isLoadingStream ? state.isPlaying : patch.isPlaying,
+        isBuffering: patch.isBuffering,
+        position: recentlySeeked ? state.position : patch.position,
+        duration: patch.duration > 0 ? patch.duration : state.duration,
+      };
+    });
   },
 }));

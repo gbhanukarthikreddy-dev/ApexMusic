@@ -15,14 +15,15 @@ export function useAudioController(): void {
         position: status.currentTime ?? 0,
         duration: status.duration ?? 0,
       });
+    });
 
-      if (status.didJustFinish) {
-        void store.handleTrackFinished();
-      }
+    audioService.setOnTrackIndexChanged((index) => {
+      usePlayerStore.getState().syncExternalTrackIndex(index);
     });
 
     return () => {
       audioService.setOnStatusUpdate(() => {});
+      audioService.setOnTrackIndexChanged(null);
     };
   }, []);
 }

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Dimensions,
-  GestureResponderEvent,
   LayoutChangeEvent,
   Platform,
   Pressable,
@@ -25,6 +24,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedHeartButton } from '../components/AnimatedHeartButton';
 import { EqualizerBars } from '../components/EqualizerBars';
+import { LyricsView } from '../components/LyricsView';
 import { TrackActionSheet } from '../components/TrackActionSheet';
 import { useLibraryStore } from '../store/libraryStore';
 import { usePlayerStore } from '../store/playerStore';
@@ -34,12 +34,6 @@ import { triggerLightHaptic, triggerMediumHaptic } from '../utils/haptics';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ART_SIZE = Math.min(SCREEN_WIDTH - 52, 344);
-
-const QUALITY_LABELS = {
-  low: 'DATA SAVER',
-  medium: 'BALANCED',
-  high: 'STUDIO HIGH',
-} as const;
 
 const PlayerSeekBar = React.memo(function PlayerSeekBar({
   fallbackDuration,
@@ -67,48 +61,80 @@ const PlayerSeekBar = React.memo(function PlayerSeekBar({
   const displayPosition = seekingPosition !== null ? seekingPosition : position;
   const progress = Math.min(1, Math.max(0, displayPosition / effectiveDuration));
 
-  const computeSeekFromTouch = (event: GestureResponderEvent) => {
-    const x = event.nativeEvent.locationX;
-    const ratio = Math.min(1, Math.max(0, x / barWidthRef.current));
-    return ratio * effectiveDuration;
-  };
+  const computeSeekFromX = useCallback(
+    (x: number) => {
+      const ratio = Math.min(1, Math.max(0, x / barWidthRef.current));
+      return ratio * effectiveDuration;
+    },
+    [effectiveDuration]
+  );
+
+  const commitSeek = useCallback(
+    (x: number) => {
+      const target = computeSeekFromX(x);
+      setSeekingPosition(null);
+      void seekTo(target);
+    },
+    [computeSeekFromX, seekTo]
+  );
+
+  const updateDragSeek = useCallback(
+    (x: number) => {
+      setSeekingPosition(computeSeekFromX(x));
+    },
+    [computeSeekFromX]
+  );
 
   const handleBarLayout = (e: LayoutChangeEvent) => {
     barWidthRef.current = Math.max(1, e.nativeEvent.layout.width);
   };
 
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .onBegin((e) => {
+          'worklet';
+          seekBarScaleY.set(withTiming(1.6, { duration: 120 }));
+          thumbScale.set(withSpring(1.35, { damping: 14 }));
+          scheduleOnRN(triggerLightHaptic);
+          scheduleOnRN(updateDragSeek, e.x);
+        })
+        .onUpdate((e) => {
+          'worklet';
+          scheduleOnRN(updateDragSeek, e.x);
+        })
+        .onEnd((e) => {
+          'worklet';
+          seekBarScaleY.set(withTiming(1, { duration: 150 }));
+          thumbScale.set(withSpring(1, { damping: 14 }));
+          scheduleOnRN(commitSeek, e.x);
+        })
+        .onFinalize(() => {
+          'worklet';
+          seekBarScaleY.set(withTiming(1, { duration: 150 }));
+          thumbScale.set(withSpring(1, { damping: 14 }));
+        }),
+    [commitSeek, seekBarScaleY, thumbScale, updateDragSeek]
+  );
+
   return (
     <View style={styles.seekSection}>
-      <View
-        onLayout={handleBarLayout}
-        onStartShouldSetResponder={() => true}
-        onResponderGrant={(e) => {
-          triggerLightHaptic();
-          seekBarScaleY.value = withTiming(1.6, { duration: 120 });
-          thumbScale.value = withSpring(1.35, { damping: 14 });
-          setSeekingPosition(computeSeekFromTouch(e));
-        }}
-        onResponderMove={(e) => setSeekingPosition(computeSeekFromTouch(e))}
-        onResponderRelease={(e) => {
-          const target = computeSeekFromTouch(e);
-          seekBarScaleY.value = withTiming(1, { duration: 150 });
-          thumbScale.value = withSpring(1, { damping: 14 });
-          setSeekingPosition(null);
-          void seekTo(target);
-        }}
-        style={styles.seekTouchArea}
-      >
-        <Animated.View style={[styles.seekTrack, seekTrackStyle]}>
-          <View style={[styles.seekFill, { width: `${progress * 100}%` }]} />
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.seekThumb,
-            { left: `${progress * 100}%` },
-            seekThumbStyle,
-          ]}
-        />
-      </View>
+      <GestureDetector gesture={panGesture}>
+        <View onLayout={handleBarLayout} style={styles.seekTouchArea}>
+          <Animated.View style={[styles.seekTrack, seekTrackStyle]} pointerEvents="none">
+            <View style={[styles.seekFill, { width: `${progress * 100}%` }]} />
+          </Animated.View>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.seekThumb,
+              { left: `${progress * 100}%` },
+              seekThumbStyle,
+            ]}
+          />
+        </View>
+      </GestureDetector>
       <View style={styles.timeRow}>
         <Text style={styles.timeText}>{formatDuration(displayPosition)}</Text>
         <Text style={styles.timeText}>{formatDuration(effectiveDuration)}</Text>
@@ -134,13 +160,13 @@ export default function PlayerScreen() {
   const cycleRepeatMode = usePlayerStore((s) => s.cycleRepeatMode);
   const retryCurrentTrack = usePlayerStore((s) => s.retryCurrentTrack);
 
-  const audioQuality = useLibraryStore((s) => s.audioQuality);
   const isLiked = useLibraryStore((s) =>
     currentTrack ? s.likedSongs.some((t) => t.id === currentTrack.id) : false
   );
   const toggleLike = useLibraryStore((s) => s.toggleLike);
 
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
 
   const artScale = useSharedValue(isPlaying ? 1 : 0.91);
   const artSwipeX = useSharedValue(0);
@@ -276,19 +302,23 @@ export default function PlayerScreen() {
           </View>
         </View>
 
-        {/* Album Art (swipe left/right to skip, swipe down to close) */}
+        {/* Album Art or Synced Lyrics */}
         <View style={styles.artContainer}>
-          <GestureDetector gesture={artPanGesture}>
-            <Animated.View style={[styles.artShadow, artAnimatedStyle]}>
-              <Image
-                source={{ uri: artUri }}
-                style={styles.artwork}
-                contentFit="cover"
-                transition={250}
-                cachePolicy="memory-disk"
-              />
-            </Animated.View>
-          </GestureDetector>
+          {showLyrics ? (
+            <LyricsView track={currentTrack} height={ART_SIZE} />
+          ) : (
+            <GestureDetector gesture={artPanGesture}>
+              <Animated.View style={[styles.artShadow, artAnimatedStyle]}>
+                <Image
+                  source={{ uri: artUri }}
+                  style={styles.artwork}
+                  contentFit="cover"
+                  transition={250}
+                  cachePolicy="memory-disk"
+                />
+              </Animated.View>
+            </GestureDetector>
+          )}
         </View>
 
         {/* Track Info */}
@@ -417,10 +447,22 @@ export default function PlayerScreen() {
 
         {/* Bottom Utility Dock */}
         <View style={styles.footerRow}>
-          <View style={styles.qualityPill}>
-            <Ionicons name="sparkles" size={12} color={colors.accentLight} />
-            <Text style={styles.qualityText}>{QUALITY_LABELS[audioQuality]}</Text>
-          </View>
+          <Pressable
+            onPress={() => {
+              triggerLightHaptic();
+              setShowLyrics((prev) => !prev);
+            }}
+            style={[styles.footerBtn, showLyrics && styles.footerBtnActive]}
+          >
+            <Ionicons
+              name={showLyrics ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'}
+              size={15}
+              color={showLyrics ? colors.textInverse : colors.textPrimary}
+            />
+            <Text style={[styles.footerBtnText, showLyrics && styles.footerBtnTextActive]}>
+              Lyrics
+            </Text>
+          </Pressable>
 
           <Pressable
             onPress={() => {
@@ -691,23 +733,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  qualityPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
-    borderRadius: radii.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  qualityText: {
-    color: colors.textPrimary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    gap: spacing.xs,
   },
   footerBtn: {
     flexDirection: 'row',
@@ -720,9 +746,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },
+  footerBtnActive: {
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
+  },
   footerBtnText: {
     color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '600',
+  },
+  footerBtnTextActive: {
+    color: colors.textInverse,
+    fontWeight: '700',
   },
 });

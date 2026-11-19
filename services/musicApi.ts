@@ -52,6 +52,10 @@ export function getApiBaseUrl(): string {
   return customBaseUrl || resolveDefaultBaseUrl();
 }
 
+export function buildAudioStreamUrl(videoId: string, quality: AudioQuality): string {
+  return `${getApiBaseUrl()}/api/audio/${encodeURIComponent(videoId)}?quality=${quality}`;
+}
+
 export class MusicApiError extends Error {
   status?: number;
   isNetworkError: boolean;

@@ -11,6 +11,7 @@ import {
   DownloadPlaceholder,
   HistoryEntry,
   HomeFeedResponse,
+  OfflinePlaylist,
   Track,
   UserPlaylist,
 } from '../types/music';
@@ -25,6 +26,7 @@ interface LibraryState {
   history: HistoryEntry[];
   recentSearches: string[];
   downloads: DownloadPlaceholder[];
+  offlinePlaylists: OfflinePlaylist[];
   audioQuality: AudioQuality;
   cachedHomeFeed: HomeFeedResponse | null;
 
@@ -45,6 +47,11 @@ interface LibraryState {
 
   toggleDownloadPlaceholder: (track: Track) => void;
   retryOfflineDownload: (track: Track) => void;
+  downloadTracksBatch: (
+    tracks: Track[],
+    playlistMeta?: { id: string; title: string; subtitle?: string; artwork?: string }
+  ) => Promise<void>;
+  removeOfflinePlaylist: (playlistId: string) => void;
   isDownloadedPlaceholder: (trackId: string) => boolean;
   getOfflineUri: (trackId: string) => string | null;
 
@@ -60,6 +67,7 @@ export const useLibraryStore = create<LibraryState>()(
       history: [],
       recentSearches: [],
       downloads: [],
+      offlinePlaylists: [],
       audioQuality: 'high',
       cachedHomeFeed: null,
 
@@ -224,6 +232,99 @@ export const useLibraryStore = create<LibraryState>()(
       },
 
       isDownloadedPlaceholder: (trackId) => get().downloads.some((d) => d.track.id === trackId),
+
+      downloadTracksBatch: async (tracks, playlistMeta) => {
+        if (tracks.length === 0) return;
+
+        if (playlistMeta) {
+          set((state) => {
+            const others = state.offlinePlaylists.filter((p) => p.id !== playlistMeta.id);
+            return {
+              offlinePlaylists: [
+                {
+                  id: playlistMeta.id,
+                  title: playlistMeta.title,
+                  subtitle: playlistMeta.subtitle,
+                  artwork: playlistMeta.artwork || tracks[0]?.artwork,
+                  tracks,
+                  savedAt: Date.now(),
+                },
+                ...others,
+              ],
+            };
+          });
+        }
+
+        const currentDownloads = get().downloads;
+        const pending = tracks.filter((t) => {
+          const existing = currentDownloads.find((d) => d.track.id === t.id);
+          return !existing || (existing.status !== 'downloaded' && existing.status !== 'downloading');
+        });
+
+        if (pending.length === 0) {
+          useUIStore.getState().showToast('All playlist tracks are already saved offline');
+          return;
+        }
+
+        const quality = get().audioQuality;
+        useUIStore.getState().showToast(`Downloading ${pending.length} tracks for offline...`);
+
+        set((state) => {
+          const pendingIds = new Set(pending.map((t) => t.id));
+          const kept = state.downloads.filter((d) => !pendingIds.has(d.track.id));
+          const queuedEntries = pending.map((track) => ({
+            track,
+            addedAt: Date.now(),
+            status: 'downloading' as const,
+            estimatedSizeMb: Math.max(2.4, Number(((track.duration || 200) * 0.024).toFixed(1))),
+          }));
+          return { downloads: [...queuedEntries, ...kept] };
+        });
+
+        let successCount = 0;
+        for (const track of pending) {
+          try {
+            const { localUri, sizeBytes, sizeMb } = await downloadTrackAudio(track, quality);
+            successCount += 1;
+            set((state) => ({
+              downloads: state.downloads.map((d) =>
+                d.track.id === track.id
+                  ? {
+                      ...d,
+                      status: 'downloaded',
+                      localUri,
+                      sizeBytes,
+                      estimatedSizeMb: sizeMb,
+                      error: undefined,
+                    }
+                  : d
+              ),
+            }));
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Download failed';
+            set((state) => ({
+              downloads: state.downloads.map((d) =>
+                d.track.id === track.id ? { ...d, status: 'error', error: msg } : d
+              ),
+            }));
+          }
+        }
+
+        if (successCount > 0) {
+          useUIStore
+            .getState()
+            .showToast(`Saved ${successCount} of ${pending.length} tracks for offline`);
+        } else {
+          useUIStore.getState().showToast('Playlist download failed');
+        }
+      },
+
+      removeOfflinePlaylist: (playlistId) => {
+        set((state) => ({
+          offlinePlaylists: state.offlinePlaylists.filter((p) => p.id !== playlistId),
+        }));
+        useUIStore.getState().showToast('Removed playlist from Offline');
+      },
 
       getOfflineUri: (trackId) => {
         const item = get().downloads.find((d) => d.track.id === trackId);

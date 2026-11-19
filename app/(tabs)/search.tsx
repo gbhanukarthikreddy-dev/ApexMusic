@@ -105,9 +105,22 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardOpen(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardOpen(false);
+      setShowSuggestions(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const runSearch = useCallback(
-    async (searchText: string) => {
+    async (searchText: string, saveHistory = false) => {
       const cleaned = searchText.trim();
       if (!cleaned) {
         setResults(null);
@@ -120,7 +133,9 @@ export default function SearchScreen() {
       try {
         const data = await musicApi.search(cleaned);
         setResults(data);
-        addRecentSearch(cleaned);
+        if (saveHistory) {
+          addRecentSearch(cleaned);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Search failed.');
       } finally {
@@ -171,7 +186,7 @@ export default function SearchScreen() {
       ]}
       keyboardShouldPersistTaps="handled"
     >
-      {recentSearches.length > 0 ? (
+      {isKeyboardOpen && recentSearches.length > 0 ? (
         <View style={styles.recentSection}>
           <View style={styles.recentHeader}>
             <Text style={[typography.h3, { color: themeColors.textPrimary }]}>
@@ -454,7 +469,7 @@ export default function SearchScreen() {
             onFocus={() => setShowSuggestions(true)}
             onSubmitEditing={() => {
               setShowSuggestions(false);
-              void runSearch(query);
+              void runSearch(query, true);
             }}
             placeholder="Songs, artists, albums, playlists..."
             placeholderTextColor={themeColors.textMuted}
@@ -478,7 +493,7 @@ export default function SearchScreen() {
         </View>
 
         {/* Suggestions strip while typing */}
-        {showSuggestions && query.trim().length > 0 && suggestions.length > 0 ? (
+        {isKeyboardOpen && showSuggestions && query.trim().length > 0 && suggestions.length > 0 ? (
           <View
             style={[
               styles.suggestionsBox,

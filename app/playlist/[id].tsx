@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -36,9 +37,14 @@ export default function PlaylistScreen() {
     isLocal ? s.playlists.find((p) => p.id === id) : undefined
   );
   const removeTrackFromPlaylist = useLibraryStore((s) => s.removeTrackFromPlaylist);
+  const offlinePlaylist = useLibraryStore((s) =>
+    s.offlinePlaylists.find((p) => p.id === id)
+  );
+  const downloads = useLibraryStore((s) => s.downloads);
+  const downloadTracksBatch = useLibraryStore((s) => s.downloadTracksBatch);
 
   const [remotePlaylist, setRemotePlaylist] = useState<PlaylistDetail | null>(null);
-  const [loading, setLoading] = useState(!isLocal);
+  const [loading, setLoading] = useState(!isLocal && !offlinePlaylist);
   const [error, setError] = useState<string | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
 
@@ -62,6 +68,16 @@ export default function PlaylistScreen() {
     }
   }, [isLocal, loadRemotePlaylist]);
 
+  const offlineFallback: PlaylistDetail | null = offlinePlaylist
+    ? {
+        id: offlinePlaylist.id,
+        title: offlinePlaylist.title,
+        subtitle: offlinePlaylist.subtitle || `${offlinePlaylist.tracks.length} tracks • Offline`,
+        artwork: offlinePlaylist.artwork || offlinePlaylist.tracks[0]?.artwork || '',
+        tracks: offlinePlaylist.tracks,
+      }
+    : null;
+
   const playlist: PlaylistDetail | null = isLocal
     ? localPlaylist
       ? {
@@ -74,7 +90,7 @@ export default function PlaylistScreen() {
           tracks: localPlaylist.tracks,
         }
       : null
-    : remotePlaylist;
+    : remotePlaylist ?? offlineFallback;
 
   return (
     <View style={styles.root}>
@@ -157,6 +173,60 @@ export default function PlaylistScreen() {
                         <Ionicons name="shuffle" size={18} color={colors.textPrimary} />
                         <Text style={styles.shuffleBtnText}>Shuffle</Text>
                       </Pressable>
+                      {(() => {
+                        const trackIds = playlist.tracks.map((t) => t.id);
+                        const downloadedCount = trackIds.filter((tid) =>
+                          downloads.some((d) => d.track.id === tid && d.status === 'downloaded')
+                        ).length;
+                        const isDownloadingAny = trackIds.some((tid) =>
+                          downloads.some((d) => d.track.id === tid && d.status === 'downloading')
+                        );
+                        const allDownloaded =
+                          trackIds.length > 0 && downloadedCount === trackIds.length;
+
+                        return (
+                          <Pressable
+                            onPress={() =>
+                              void downloadTracksBatch(playlist.tracks, {
+                                id: playlist.id,
+                                title: playlist.title,
+                                subtitle: playlist.subtitle,
+                                artwork: playlist.artwork,
+                              })
+                            }
+                            disabled={isDownloadingAny}
+                            style={[
+                              styles.downloadBtn,
+                              allDownloaded && styles.downloadBtnDone,
+                            ]}
+                          >
+                            {isDownloadingAny ? (
+                              <>
+                                <ActivityIndicator size="small" color={colors.textPrimary} />
+                                <Text style={styles.downloadBtnText}>
+                                  {downloadedCount}/{trackIds.length}
+                                </Text>
+                              </>
+                            ) : (
+                              <>
+                                <Ionicons
+                                  name={allDownloaded ? 'cloud-done' : 'cloud-download-outline'}
+                                  size={18}
+                                  color={allDownloaded ? colors.success : colors.textPrimary}
+                                />
+                                <Text
+                                  style={[
+                                    styles.downloadBtnText,
+                                    allDownloaded && { color: colors.success },
+                                  ]}
+                                >
+                                  {allDownloaded ? 'Saved' : 'Download'}
+                                </Text>
+                              </>
+                            )}
+                          </Pressable>
+                        );
+                      })()}
                     </View>
                   ) : null}
                 </View>
@@ -290,6 +360,8 @@ const styles = StyleSheet.create({
   },
   ctaRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
@@ -322,6 +394,27 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '700',
     fontSize: 15,
+  },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: colors.glassHighlight,
+    justifyContent: 'center',
+  },
+  downloadBtnDone: {
+    borderColor: 'rgba(48, 209, 88, 0.45)',
+    backgroundColor: 'rgba(48, 209, 88, 0.14)',
+  },
+  downloadBtnText: {
+    color: colors.textPrimary,
+    fontWeight: '700',
+    fontSize: 14,
   },
   trackList: {
     marginTop: spacing.xs,

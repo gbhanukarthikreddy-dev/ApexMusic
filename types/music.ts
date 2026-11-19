@@ -134,3 +134,12 @@ export interface DownloadPlaceholder {
   sizeBytes?: number;
   error?: string;
 }
+
+export interface OfflinePlaylist {
+  id: string;
+  title: string;
+  subtitle?: string;
+  artwork?: string;
+  tracks: Track[];
+  savedAt: number;
+}
